@@ -1,0 +1,190 @@
+{% extends 'base/base.html' %} {% block content %}
+<div class="dashboard-layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="brand">
+      <img
+        src="{{ url_for('static', filename='images/logo.png') }}"
+        alt="Logo Media Com"
+      />
+      <div>
+        <h2>MEDIA COM</h2>
+        <small>LEMBAGA BELAJAR KOMPUTER</small>
+      </div>
+    </div>
+
+    <nav class="sidebar-menu">
+      <a href="{{ url_for('dashboard') }}" class="menu-item active">
+        <span>⌂</span> Dashboard
+      </a>
+      <a href="#" class="menu-item"> <span>⬡</span> Data Barang </a>
+      <a href="#" class="menu-item"> <span>⇄</span> Peminjaman </a>
+      <a href="#" class="menu-item"> <span>↩</span> Pengembalian </a>
+      <a href="#" class="menu-item"> <span>▦</span> Ruangan </a>
+      <a href="#" class="menu-item"> <span>▤</span> Laporan </a>
+    </nav>
+
+    <a href="{{ url_for('logout') }}" class="logout"> ⇥ &nbsp; Logout </a>
+  </aside>
+
+  <!-- KONTEN UTAMA -->
+  <main class="main-content">
+    <header class="topbar">
+      <input type="search" placeholder="⌕  Cari barang, kode, atau nama..." />
+
+      <div class="profile">
+        <span class="profile-icon">●</span>
+        <div>
+          <strong>Admin</strong>
+          <small>Administrator</small>
+        </div>
+      </div>
+    </header>
+
+    <section class="page-heading">
+      <h1>Selamat Datang, Admin!</h1>
+      <p>Kelola data inventaris Media Com dengan mudah dan cepat.</p>
+    </section>
+
+    <!-- STATISTIK -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⬡</div>
+        <div>
+          <p>Total Barang</p>
+          <h2>48</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">✓</div>
+        <div>
+          <p>Tersedia</p>
+          <h2>32</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">◷</div>
+        <div>
+          <p>Dipinjam</p>
+          <h2>8</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">!</div>
+        <div>
+          <p>Rusak</p>
+          <h2>8</h2>
+        </div>
+      </div>
+    </section>
+
+    <!-- GRAFIK -->
+    <section class="charts-grid">
+      <div class="content-card">
+        <h3>▥ &nbsp; Statistik Barang per Ruangan</h3>
+        <div class="bar-chart">
+          <div class="bar-item">
+            <strong>12</strong>
+            <div class="bar" style="height: 60%"></div>
+            <span>Ruang 1<br />(RPL)</span>
+          </div>
+          <div class="bar-item">
+            <strong>10</strong>
+            <div class="bar" style="height: 50%"></div>
+            <span>Ruang 2<br />(DKV)</span>
+          </div>
+          <div class="bar-item">
+            <strong>14</strong>
+            <div class="bar" style="height: 70%"></div>
+            <span>Ruang 3<br />(TKJ)</span>
+          </div>
+          <div class="bar-item">
+            <strong>12</strong>
+            <div class="bar" style="height: 60%"></div>
+            <span>Ruang 4<br />(Umum)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <h3>⇄ &nbsp; Status Barang</h3>
+        <div class="status-content">
+          <div class="donut-chart">
+            <div class="donut-center">
+              <strong>48</strong>
+              <span>Total</span>
+            </div>
+          </div>
+          <div class="legend">
+            <p><i class="dot available"></i> Tersedia <b>32</b></p>
+            <p><i class="dot borrowed"></i> Dipinjam <b>8</b></p>
+            <p><i class="dot damaged"></i> Rusak <b>8</b></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- AKTIVITAS TERBARU -->
+    <section class="content-card activity-card">
+      <div class="activity-heading">
+        <h3>◷ &nbsp; Aktivitas Terbaru</h3>
+        <a href="#">Lihat Semua →</a>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Tanggal</th>
+              <th>Jenis</th>
+              <th>Data</th>
+              <th>Oleh</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>22 Sep 2025 10:24</td>
+              <td class="activity-type">Peminjaman</td>
+              <td>PC-005 (Ruang 1 → Ruang 3)</td>
+              <td>Pembimbing RPL</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>22 Sep 2025 09:50</td>
+              <td class="activity-type">Pengembalian</td>
+              <td>PC-003 (Ruang 2)</td>
+              <td>Pembimbing DKV</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>21 Sep 2025 16:30</td>
+              <td class="activity-type">Tambah Barang</td>
+              <td>Monitor 24" (Ruang 2)</td>
+              <td>Admin</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>21 Sep 2025 14:12</td>
+              <td class="activity-type">Perpindahan</td>
+              <td>PC-008 (Ruang 3 → Ruang 1)</td>
+              <td>Pembimbing TKJ</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>21 Sep 2025 11:05</td>
+              <td class="activity-type">Update Data</td>
+              <td>PC-010 (Spesifikasi)</td>
+              <td>Admin</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+{% endblock %}

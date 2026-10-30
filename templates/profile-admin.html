@@ -1,0 +1,69 @@
+{% extends 'base/base.html' %} {% block content %}
+<div class="profile-page">
+  <div class="profile-header">
+    <div>
+      <h1>Profil Admin</h1>
+      <p>Informasi akun dan data diri administrator.</p>
+    </div>
+
+    <a href="{{ url_for('dashboard') }}" class="back-button">
+      ← Kembali ke Dashboard
+    </a>
+  </div>
+
+  <div class="profile-card">
+    <div class="profile-banner"></div>
+
+    <div class="profile-identity">
+      <div class="avatar">A</div>
+
+      <div>
+        <h2>{{ admin.nama }}</h2>
+        <p>{{ admin.jabatan }}</p>
+        <span class="status">● Akun Administrator</span>
+      </div>
+    </div>
+
+    <hr />
+
+    <h3>Informasi Data Diri</h3>
+
+    <div class="profile-grid">
+      <div class="profile-field">
+        <label>Nama Lengkap</label>
+        <p>{{ admin.nama }}</p>
+      </div>
+
+      <div class="profile-field">
+        <label>Username</label>
+        <p>{{ admin.username }}</p>
+      </div>
+
+      <div class="profile-field">
+        <label>Jabatan</label>
+        <p>{{ admin.jabatan }}</p>
+      </div>
+
+      <div class="profile-field">
+        <label>Email</label>
+        <p>{{ admin.email }}</p>
+      </div>
+
+      <div class="profile-field">
+        <label>Nomor Telepon</label>
+        <p>{{ admin.telepon }}</p>
+      </div>
+
+      <div class="profile-field">
+        <label>Jenis Kelamin</label>
+        <p>{{ admin.jenis_kelamin }}</p>
+      </div>
+
+      <div class="profile-field full-width">
+        <label>Alamat</label>
+        <p>{{ admin.alamat }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
