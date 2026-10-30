@@ -1,36 +1,14 @@
 {% extends 'base/base.html' %} {% block content %}
 <div class="dashboard-layout">
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="brand">
-      <img
-        src="{{ url_for('static', filename='images/logo.png') }}"
-        alt="Logo Media Com"
-      />
-      <div>
-        <h2>MEDIA COM</h2>
-        <small>LEMBAGA BELAJAR KOMPUTER</small>
-      </div>
-    </div>
-
-    <nav class="sidebar-menu">
-      <a href="{{ url_for('dashboard') }}" class="menu-item active">
-        <span>⌂</span> Dashboard
-      </a>
-      <a href="#" class="menu-item"> <span>⬡</span> Data Barang </a>
-      <a href="#" class="menu-item"> <span>⇄</span> Peminjaman </a>
-      <a href="#" class="menu-item"> <span>↩</span> Pengembalian </a>
-      <a href="#" class="menu-item"> <span>▦</span> Ruangan </a>
-      <a href="#" class="menu-item"> <span>▤</span> Laporan </a>
-    </nav>
-
-    <a href="{{ url_for('logout') }}" class="logout"> ⇥ &nbsp; Logout </a>
-  </aside>
+  {% include "base/sidebar.html" %}
 
   <!-- KONTEN UTAMA -->
   <main class="main-content">
     <header class="topbar">
-      <input type="search" placeholder="⌕  Cari barang, kode, atau nama..." />
+     <div class="">
+      <h1>Dashboard</h1>
+     </div>
 
       <div class="profile">
         <span class="profile-icon">●</span>

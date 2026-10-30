@@ -1,0 +1,88 @@
+{% extends 'base/base.html' %} {% block content %}
+<div class="dashboard-layout">
+  <!-- SIDEBAR -->
+  {% include "base/sidebar.html" %}
+
+  <!-- KONTEN UTAMA -->
+  <main class="main-content">
+    <header class="topbar">
+      <h1>Daftar Barang</h1>
+
+      <div class="profile">
+        <span class="profile-icon">●</span>
+        <div>
+          <strong>Admin</strong>
+          <small>Administrator</small>
+        </div>
+      </div>
+    </header>
+
+    
+
+    <!-- STATISTIK -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">⬡</div>
+        <div>
+          <p>Total Barang</p>
+          <h2>48</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">✓</div>
+        <div>
+          <p>Tersedia</p>
+          <h2>32</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">◷</div>
+        <div>
+          <p>Dipinjam</p>
+          <h2>8</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon">!</div>
+        <div>
+          <p>Rusak</p>
+          <h2>8</h2>
+        </div>
+      </div>
+    </section>
+
+    <!-- daftar barang -->
+     <section>
+        <table>
+            <tr>
+                <th>No</th>
+                <th>Kode Barang</th>
+                <th>Nama Barang</th>
+                <th>Kondisi</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+            <tr>
+                <td>1</td>
+                <td>10001111</td>
+                <td>Komputer IO Lenovo</td>
+                <td>Baik</td>
+                <td>Dipinjam</td>
+                <td>Edit | Delete</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>20001112</td>
+                <td>Komputer IO Lenovo</td>
+                <td>Rusak</td>
+                <td>Diperbaiki</td>
+                <td>Edit | Delete</td>
+            </tr>
+        </table>
+     </section>
+  </main>
+</div>
+{% endblock %}

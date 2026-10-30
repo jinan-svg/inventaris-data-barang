@@ -10,9 +10,13 @@ def login():
 def register():
     return render_template('register.html', title="Register")
 
-@app.route('/dashboard')
+@app.route('/')
 def dashboard():
     return render_template('dashboard.html', title="Dashboard")
+
+@app.route('/dataBarang')
+def dataBarang():
+    return render_template('dataBarang.html', title="Data Barang")
 
 @app.route('/profil-admin')
 def profil_admin():
