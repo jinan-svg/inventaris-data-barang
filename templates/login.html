@@ -39,7 +39,7 @@
     <div class="login-message {{ category }}">{{ message }}</div>
     {% endfor %} {% endwith %}
 
-    <form action="/" method="POST" id="login-form">
+    <form action="{{ url_for('login') }}" method="POST" id="login-form">
       <input type="hidden" name="role" id="selected-role" value="Admin" />
 
       <!-- INPUT USERNAME -->
@@ -133,6 +133,12 @@
         </button>
       </div>
     </div>
+
+    {% if admin_exists %}
+    <p class="auth-switch">Akun hanya dibuat oleh Admin Media Com.</p>
+    {% else %}
+    <p class="auth-switch">Setup awal: buat Admin melalui perintah <code>flask --app main create-admin</code>.</p>
+    {% endif %}
   </section>
 </main>
 {% endblock %}

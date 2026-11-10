@@ -1,0 +1,34 @@
+{% extends 'base/base.html' %}
+{% block content %}
+<div class="dashboard-layout">{% include 'base/sidebar.html' %}<main class="main-content">
+  <header class="topbar"><h1>Kelola Pengguna</h1><div class="profile"><a class="profile-link" href="{{ url_for('profil_admin') }}"><span class="profile-icon">{{ session.name[:1]|upper }}</span><span><strong>{{ session.name }}</strong><small>Admin</small></span></a></div></header>
+  <section class="page-heading"><h1>Akun Media Com</h1><p>Akun tidak dapat dibuat sendiri. Atur akses empat Pembimbing dan maksimal dua Admin dari sini.</p></section>
+  <section class="stats-grid user-capacity"><div class="stat-card"><div class="stat-icon">A</div><div><p>Admin</p><h2>{{ counts.admin }} / 2</h2></div></div><div class="stat-card"><div class="stat-icon">P</div><div><p>Pembimbing</p><h2>{{ counts.pembimbing }} / 4</h2></div></div></section>
+  <section class="content-card form-card"><h3>Buat Akun</h3>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="login-message {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post" class="data-form compact-form account-form">
+      <label>Nama Lengkap<input name="name" required></label>
+      <label>Username<input name="username" autocomplete="off" required></label>
+      <label>Password awal<input type="password" name="password" minlength="8" required><small>Minimal 8 karakter. Sampaikan password awal langsung kepada pemilik akun.</small></label>
+      <label>Jenis Akses<select name="role" id="account-role" required><option value="Pembimbing" {% if counts.pembimbing >= 4 %}disabled{% endif %} {% if counts.pembimbing < 4 %}selected{% endif %}>Pembimbing</option><option value="Admin" {% if counts.admin >= 2 %}disabled{% endif %} {% if counts.pembimbing >= 4 and counts.admin < 2 %}selected{% endif %}>Admin</option></select></label>
+      <label id="assigned-room-field">Ruangan Pembimbing<select name="room_id"><option value="">Pilih ruangan yang belum ditugaskan</option>{% for room in rooms %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></label>
+      <div class="form-actions"><button class="primary-action" type="submit" {% if counts.admin >= 2 and counts.pembimbing >= 4 %}disabled{% endif %}>Buat Akun</button></div>
+    </form>
+  </section>
+  <section class="content-card module-card"><h3>Pengguna Terdaftar</h3><div class="table-wrapper"><table><thead><tr><th>Nama</th><th>Username</th><th>Jenis Akses</th><th>Ruangan</th><th>Kelola</th></tr></thead><tbody>
+    {% for user in users %}<tr><td>{{ user.name }}{% if user.id == session.user_id %} <span class="status-pill pill-green">Anda</span>{% endif %}</td><td>{{ user.username }}</td><td>{{ user.role }}</td><td>{{ user.room_name or '—' }}</td><td><div class="account-actions"><a class="table-action" href="{{ url_for('edit_pengguna', user_id=user.id) }}">Ubah</a><form method="post" action="{{ url_for('reset_password_pengguna', user_id=user.id) }}" class="inline-reset"><input type="password" name="password" placeholder="Password baru" minlength="8" required aria-label="Password baru untuk {{ user.username }}"><button class="table-action" type="submit">Atur ulang</button></form>{% if user.id != session.user_id %}<form method="post" action="{{ url_for('hapus_pengguna', user_id=user.id) }}" onsubmit="return confirm('Hapus akun {{ user.username }}?')"><button class="table-action danger" type="submit">Hapus</button></form>{% endif %}</div></td></tr>{% else %}<tr><td colspan="5" class="empty-state">Belum ada akun pengguna.</td></tr>{% endfor %}
+  </tbody></table></div></section>
+</main></div>
+<script>
+  const roleSelect = document.getElementById("account-role");
+  const roomField = document.getElementById("assigned-room-field");
+  const roomSelect = roomField.querySelector("select");
+  function updateRoomField() {
+    const isPembimbing = roleSelect.value === "Pembimbing";
+    roomField.hidden = !isPembimbing;
+    roomSelect.required = isPembimbing;
+  }
+  roleSelect.addEventListener("change", updateRoomField);
+  updateRoomField();
+</script>
+{% endblock %}

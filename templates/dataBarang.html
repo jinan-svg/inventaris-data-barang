@@ -1,88 +1,24 @@
-{% extends 'base/base.html' %} {% block content %}
+{% extends 'base/base.html' %}
+{% block content %}
 <div class="dashboard-layout">
-  <!-- SIDEBAR -->
   {% include "base/sidebar.html" %}
-
-  <!-- KONTEN UTAMA -->
   <main class="main-content">
-    <header class="topbar">
-      <h1>Daftar Barang</h1>
-
-      <div class="profile">
-        <span class="profile-icon">●</span>
-        <div>
-          <strong>Admin</strong>
-          <small>Administrator</small>
-        </div>
-      </div>
-    </header>
-
-    
-
-    <!-- STATISTIK -->
+    <header class="topbar"><h1>Data Barang</h1><div class="profile"><a class="profile-link" href="{{ url_for('profil_admin') }}"><span class="profile-icon">{{ session.name[:1]|upper }}</span><span><strong>{{ session.name }}</strong><small>{{ session.role }}</small></span></a></div></header>
+    <section class="page-heading"><h1>Inventaris Barang</h1><p>Kelola barang, lokasi, kondisi, dan ketersediaannya.</p></section>
     <section class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon">⬡</div>
-        <div>
-          <p>Total Barang</p>
-          <h2>48</h2>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">✓</div>
-        <div>
-          <p>Tersedia</p>
-          <h2>32</h2>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">◷</div>
-        <div>
-          <p>Dipinjam</p>
-          <h2>8</h2>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon">!</div>
-        <div>
-          <p>Rusak</p>
-          <h2>8</h2>
-        </div>
-      </div>
+      <div class="stat-card"><div class="stat-icon">⬡</div><div><p>Total Barang</p><h2>{{ barang|length }}</h2></div></div>
+      <div class="stat-card"><div class="stat-icon">✓</div><div><p>Tersedia</p><h2>{{ barang|selectattr('status', 'equalto', 'Tersedia')|list|length }}</h2></div></div>
+      <div class="stat-card"><div class="stat-icon">◷</div><div><p>Dipinjam</p><h2>{{ barang|selectattr('status', 'equalto', 'Dipinjam')|list|length }}</h2></div></div>
+      <div class="stat-card"><div class="stat-icon">!</div><div><p>Perlu Perhatian</p><h2>{{ barang|selectattr('kondisi', 'equalto', 'Perlu Perbaikan')|list|length }}</h2></div></div>
     </section>
-
-    <!-- daftar barang -->
-     <section>
-        <table>
-            <tr>
-                <th>No</th>
-                <th>Kode Barang</th>
-                <th>Nama Barang</th>
-                <th>Kondisi</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-            <tr>
-                <td>1</td>
-                <td>10001111</td>
-                <td>Komputer IO Lenovo</td>
-                <td>Baik</td>
-                <td>Dipinjam</td>
-                <td>Edit | Delete</td>
-            </tr>
-            <tr>
-                <td>2</td>
-                <td>20001112</td>
-                <td>Komputer IO Lenovo</td>
-                <td>Rusak</td>
-                <td>Diperbaiki</td>
-                <td>Edit | Delete</td>
-            </tr>
-        </table>
-     </section>
+    <section class="content-card inventory-card">
+      <div class="inventory-toolbar"><div><h3>Daftar Inventaris</h3><p>Lokasi yang tampil adalah posisi PC saat ini.</p></div>{% if session.role == 'Admin' %}<a class="primary-action button-link" href="{{ url_for('form_barang') }}">＋ Tambah Barang</a>{% endif %}</div>
+      <div class="filter-row"><label class="search-box">⌕ <input id="inventory-search" type="search" placeholder="Cari kode atau nama barang…" aria-label="Cari barang"></label><select id="status-filter" aria-label="Filter status"><option value="">Semua status</option><option>Tersedia</option><option>Dipinjam</option><option>Perbaikan</option></select><button class="secondary-action" type="button" onclick="window.print()">Cetak</button></div>
+      <div class="table-wrapper"><table id="inventory-table"><thead><tr><th>Kode Barang</th><th>Nama Barang</th><th>Kategori</th><th>Lokasi Saat Ini</th><th>Kondisi</th><th>Status</th>{% if session.role == 'Admin' %}<th>Aksi</th>{% endif %}</tr></thead><tbody>
+      {% for item in barang %}<tr><td><span class="item-code">{{ item.kode }}</span></td><td><strong>{{ item.nama }}</strong></td><td>{{ item.kategori }}</td><td>{{ item.ruangan }}</td><td>{{ item.kondisi }}</td><td><span class="status-pill {{ 'pill-green' if item.status == 'Tersedia' else ('pill-amber' if item.status == 'Dipinjam' else 'pill-red') }}">{{ item.status }}</span></td>{% if session.role == 'Admin' %}<td><a class="table-action" href="{{ url_for('form_barang', item_id=item.id) }}">Edit</a><form class="inline-form" method="post" action="{{ url_for('hapus_barang', item_id=item.id) }}" onsubmit="return confirm('Hapus barang ini?')"><button class="table-action danger" type="submit">Hapus</button></form></td>{% endif %}</tr>{% else %}<tr><td colspan="{{ 7 if session.role == 'Admin' else 6 }}" class="empty-state">Belum ada data barang.</td></tr>{% endfor %}
+      </tbody></table></div>
+      <p class="table-note">Menampilkan {{ barang|length }} barang tersimpan di database.</p>
+    </section>
   </main>
 </div>
 {% endblock %}

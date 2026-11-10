@@ -2,8 +2,8 @@
 <div class="profile-page">
   <div class="profile-header">
     <div>
-      <h1>Profil Admin</h1>
-      <p>Informasi akun dan data diri administrator.</p>
+      <h1>Profil Akun</h1>
+      <p>Informasi akses pengguna Media Com.</p>
     </div>
 
     <a href="{{ url_for('dashboard') }}" class="back-button">
@@ -15,18 +15,18 @@
     <div class="profile-banner"></div>
 
     <div class="profile-identity">
-      <div class="avatar">A</div>
+      <div class="avatar">{{ admin.nama[:1]|upper }}</div>
 
       <div>
         <h2>{{ admin.nama }}</h2>
         <p>{{ admin.jabatan }}</p>
-        <span class="status">● Akun Administrator</span>
+        <span class="status">● Akun {{ admin.jabatan }}</span>
       </div>
     </div>
 
     <hr />
 
-    <h3>Informasi Data Diri</h3>
+    <h3>Informasi Akun</h3>
 
     <div class="profile-grid">
       <div class="profile-field">
@@ -45,24 +45,10 @@
       </div>
 
       <div class="profile-field">
-        <label>Email</label>
-        <p>{{ admin.email }}</p>
+        <label>Ruangan Tugas</label>
+        <p>{{ admin.room_name or '—' }}</p>
       </div>
 
-      <div class="profile-field">
-        <label>Nomor Telepon</label>
-        <p>{{ admin.telepon }}</p>
-      </div>
-
-      <div class="profile-field">
-        <label>Jenis Kelamin</label>
-        <p>{{ admin.jenis_kelamin }}</p>
-      </div>
-
-      <div class="profile-field full-width">
-        <label>Alamat</label>
-        <p>{{ admin.alamat }}</p>
-      </div>
     </div>
   </div>
 </div>

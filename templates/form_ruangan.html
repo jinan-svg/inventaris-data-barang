@@ -1,0 +1,10 @@
+{% extends 'base/base.html' %}
+{% block content %}
+<div class="dashboard-layout">{% include 'base/sidebar.html' %}<main class="main-content">
+  <header class="topbar"><h1>{{ title }}</h1><div class="profile"><span class="profile-icon">{{ session.name[:1]|upper }}</span><div><strong>{{ session.name }}</strong><small>Admin</small></div></div></header>
+  <section class="page-heading"><h1>{{ title }}</h1><p>Perbarui informasi ruangan. Penugasan Pembimbing tetap mengikuti ID ruangan.</p></section>
+  <section class="content-card form-card">{% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="login-message {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post" class="data-form"><label>Kode Ruangan<input name="code" value="{{ room.code }}" required></label><label>Nama Ruangan<input name="name" value="{{ room.name }}" required></label><label>Penanggung Jawab<input name="person_in_charge" value="{{ room.person_in_charge }}"></label><div class="form-actions"><a class="secondary-action" href="{{ url_for('ruangan') }}">Batal</a><button class="primary-action" type="submit">Simpan Perubahan</button></div></form>
+  </section>
+</main></div>
+{% endblock %}

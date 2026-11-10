@@ -11,14 +11,15 @@
     </div>
 
     <nav class="sidebar-menu">
-      <a href="{{ url_for('dashboard') }}" class="menu-item active">
+      <a href="{{ url_for('dashboard') }}" class="menu-item {{ 'active' if request.endpoint == 'dashboard' else '' }}">
         <span>⌂</span> Dashboard
       </a>
-      <a href="/dataBarang" class="menu-item"> <span>⬡</span> Data Barang </a>
-      <a href="#" class="menu-item"> <span>⇄</span> Peminjaman </a>
-      <a href="#" class="menu-item"> <span>↩</span> Pengembalian </a>
-      <a href="#" class="menu-item"> <span>▦</span> Ruangan </a>
-      <a href="#" class="menu-item"> <span>▤</span> Laporan </a>
+      <a href="{{ url_for('data_barang') }}" class="menu-item {{ 'active' if request.endpoint in ['dataBarang', 'data_barang'] else '' }}"> <span>⬡</span> Data Barang </a>
+      <a href="{{ url_for('peminjaman') }}" class="menu-item {{ 'active' if request.endpoint == 'peminjaman' else '' }}"> <span>⇄</span> Peminjaman </a>
+      <a href="{{ url_for('pengembalian') }}" class="menu-item {{ 'active' if request.endpoint == 'pengembalian' else '' }}"> <span>↩</span> Pengembalian </a>
+      {% if session.get('role') == 'Admin' %}<a href="{{ url_for('ruangan') }}" class="menu-item {{ 'active' if request.endpoint in ['ruangan', 'edit_ruangan', 'hapus_ruangan'] else '' }}"><span>▦</span> Ruangan</a>{% endif %}
+      <a href="{{ url_for('laporan') }}" class="menu-item {{ 'active' if request.endpoint == 'laporan' else '' }}"> <span>▤</span> Laporan </a>
+      {% if session.get('role') == 'Admin' %}<a href="{{ url_for('pengguna') }}" class="menu-item {{ 'active' if request.endpoint in ['pengguna', 'edit_pengguna', 'hapus_pengguna', 'reset_password_pengguna'] else '' }}"><span>♙</span> Pengguna</a>{% endif %}
     </nav>
 
     <a href="{{ url_for('logout') }}" class="logout"> ⇥ &nbsp; Logout </a>

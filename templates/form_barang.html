@@ -1,0 +1,19 @@
+{% extends 'base/base.html' %}
+{% block content %}
+<div class="dashboard-layout">{% include 'base/sidebar.html' %}<main class="main-content">
+  <header class="topbar"><h1>{{ title }}</h1><div class="profile"><span class="profile-icon">{{ session.name[:1]|upper }}</span><div><strong>{{ session.name }}</strong><small>{{ session.role }}</small></div></div></header>
+  <section class="page-heading"><h1>{{ title }}</h1><p>Isi informasi barang inventaris.</p></section>
+  <section class="content-card form-card">
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="login-message {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post" class="data-form">
+      <label>Kode Barang<input name="code" value="{{ item.code if item else '' }}" placeholder="Contoh: INV-005" required></label>
+      <label>Nama Barang<input name="name" value="{{ item.name if item else '' }}" required></label>
+      <label>Kategori<input name="category" value="{{ item.category if item else '' }}" placeholder="Komputer, Monitor, …" required></label>
+      {% if item %}{% set current_room = rooms|selectattr('id', 'equalto', item.room_id)|first %}<label>Lokasi saat ini<input value="{{ current_room.name if current_room else 'Belum ditempatkan' }} — gunakan transaksi peminjaman untuk memindahkan PC" disabled><input type="hidden" name="room_id" value="{{ item.room_id or '' }}"></label>{% else %}<label>Ruangan awal<select name="room_id"><option value="">Belum ditempatkan</option>{% for room in rooms %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></label>{% endif %}
+      <label>Kondisi<select name="condition">{% for condition in ['Baik', 'Perlu Perbaikan', 'Rusak'] %}<option {% if item and item.condition == condition %}selected{% endif %}>{{ condition }}</option>{% endfor %}</select></label>
+      <label>Status{% if item and item.status == 'Dipinjam' %}<input value="Dipinjam — dikelola oleh transaksi peminjaman" disabled><input type="hidden" name="status" value="Tersedia">{% else %}<select name="status"><option {% if item and item.status == 'Perbaikan' %}selected{% endif %}>Tersedia</option><option {% if item and item.status == 'Perbaikan' %}selected{% endif %}>Perbaikan</option></select>{% endif %}</label>
+      <div class="form-actions"><a class="secondary-action" href="{{ url_for('data_barang') }}">Batal</a><button class="primary-action" type="submit">Simpan Barang</button></div>
+    </form>
+  </section>
+</main></div>
+{% endblock %}

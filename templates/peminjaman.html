@@ -1,0 +1,30 @@
+{% extends 'base/base.html' %}
+{% block content %}
+<div class="dashboard-layout">{% include 'base/sidebar.html' %}<main class="main-content">
+  <header class="topbar"><h1>Peminjaman</h1><div class="profile"><a class="profile-link" href="{{ url_for('profil_admin') }}"><span class="profile-icon">{{ session.name[:1]|upper }}</span><span><strong>{{ session.name }}</strong><small>{{ session.role }}</small></span></a></div></header>
+  <section class="page-heading"><h1>Peminjaman Barang</h1><p>Catat barang yang keluar dan pantau tanggal pengembaliannya.</p></section>
+  <section class="content-card form-card"><h3>Buat Peminjaman</h3>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="login-message {{ category }}">{{ message }}</div>{% endfor %}{% endwith %}
+    <form method="post" class="data-form compact-form">
+      <label>Komputer yang dipinjam<select name="item_id" required><option value="">Pilih PC dari ruangan asal</option>{% for item in items %}<option value="{{ item.id }}" data-room="{{ item.room_id }}">{{ item.code }} — {{ item.name }} ({{ item.origin_room }})</option>{% endfor %}</select></label>
+      {% if session.role == 'Admin' %}<label>Nama Pembimbing peminjam<input name="borrower" required placeholder="Nama pembimbing"></label>{% else %}<label>Peminjam<input value="{{ session.name }} · {{ session.room_name or 'Ruangan belum ditetapkan' }}" disabled></label>{% endif %}
+      {% if session.role == 'Admin' %}<label>Ruangan tujuan<select name="destination_room_id" required><option value="">Pilih ruangan tujuan</option>{% for room in rooms %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></label>{% else %}<label>Ruangan tujuan<input value="{{ session.room_name or 'Belum ditetapkan' }}" disabled></label>{% endif %}
+      <label>Tanggal Pinjam<input type="date" name="borrow_date" value="{{ today }}" required></label>
+      <label>Batas Pengembalian<input type="date" name="due_date" min="{{ today }}" required></label>
+      <div class="form-actions"><button class="primary-action" type="submit" {% if not items %}disabled{% endif %}>Simpan Peminjaman</button></div>
+    </form>
+    {% if not items %}<p class="form-hint">{% if session.role == 'Pembimbing' and not session.room_id %}Admin perlu menetapkan akun ini ke ruangan terlebih dahulu.{% elif session.role == 'Pembimbing' %}Belum ada PC tersedia di ruangan lain untuk dipinjam.{% else %}Belum ada barang yang tersedia untuk dipinjam.{% endif %}</p>{% endif %}
+  </section>
+  <section class="content-card module-card"><h3>Riwayat Peminjaman dan Perpindahan PC</h3><div class="table-wrapper"><table><thead><tr><th>Kode Transaksi</th><th>Pembimbing</th><th>Komputer</th><th>Dari Ruangan</th><th>Ke Ruangan</th><th>Tanggal Pinjam</th><th>Batas Kembali</th><th>Status</th></tr></thead><tbody>{% for loan in loans %}<tr><td>{{ loan.code }}</td><td>{{ loan.borrower }}</td><td>{{ loan.item_name }}</td><td>{{ loan.origin_room or 'Belum ditempatkan' }}</td><td>{{ loan.destination_room or '—' }}</td><td>{{ loan.borrow_date }}</td><td>{{ loan.due_date }}</td><td><span class="status-pill {{ 'pill-green' if loan.status == 'Dikembalikan' else 'pill-amber' }}">{{ loan.status }}</span></td></tr>{% else %}<tr><td colspan="8" class="empty-state">Belum ada transaksi peminjaman.</td></tr>{% endfor %}</tbody></table></div></section>
+</main></div>
+{% if session.role == 'Admin' %}<script>
+  const destinationSelect = document.querySelector('[name="destination_room_id"]');
+  const itemSelect = document.querySelector('[name="item_id"]');
+  destinationSelect.addEventListener("change", function () {
+    for (const option of itemSelect.options) {
+      option.disabled = option.dataset.room === destinationSelect.value;
+      if (option.selected && option.disabled) itemSelect.value = "";
+    }
+  });
+</script>{% endif %}
+{% endblock %}

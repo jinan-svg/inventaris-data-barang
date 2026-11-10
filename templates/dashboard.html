@@ -6,21 +6,23 @@
   <!-- KONTEN UTAMA -->
   <main class="main-content">
     <header class="topbar">
-     <div class="">
-      <h1>Dashboard</h1>
-     </div>
+      <div class="">
+        <h1>Dashboard</h1>
+      </div>
 
       <div class="profile">
-        <span class="profile-icon">●</span>
-        <div>
-          <strong>Admin</strong>
-          <small>Administrator</small>
-        </div>
+        <a class="profile-link" href="{{ url_for('profil_admin') }}"
+          ><span class="profile-icon">{{ session.name[:1]|upper }}</span
+          ><span
+            ><strong>{{ session.name }}</strong
+            ><small>{{ session.role }}</small></span
+          ></a
+        >
       </div>
     </header>
 
     <section class="page-heading">
-      <h1>Selamat Datang, Admin!</h1>
+      <h1>Selamat Datang, {{ session.name }}!</h1>
       <p>Kelola data inventaris Media Com dengan mudah dan cepat.</p>
     </section>
 
@@ -30,7 +32,7 @@
         <div class="stat-icon">⬡</div>
         <div>
           <p>Total Barang</p>
-          <h2>48</h2>
+          <h2>{{ statistik.total }}</h2>
         </div>
       </div>
 
@@ -38,7 +40,7 @@
         <div class="stat-icon">✓</div>
         <div>
           <p>Tersedia</p>
-          <h2>32</h2>
+          <h2>{{ statistik.tersedia }}</h2>
         </div>
       </div>
 
@@ -46,15 +48,15 @@
         <div class="stat-icon">◷</div>
         <div>
           <p>Dipinjam</p>
-          <h2>8</h2>
+          <h2>{{ statistik.dipinjam }}</h2>
         </div>
       </div>
 
       <div class="stat-card">
         <div class="stat-icon">!</div>
         <div>
-          <p>Rusak</p>
-          <h2>8</h2>
+          <p>Perbaikan</p>
+          <h2>{{ statistik.perbaikan }}</h2>
         </div>
       </div>
     </section>
@@ -64,42 +66,41 @@
       <div class="content-card">
         <h3>▥ &nbsp; Statistik Barang per Ruangan</h3>
         <div class="bar-chart">
+          {% for room in ruangan %}
           <div class="bar-item">
-            <strong>12</strong>
-            <div class="bar" style="height: 60%"></div>
-            <span>Ruang 1<br />(RPL)</span>
+            <strong>{{ room.total }}</strong>
+            <div class="bar" style="height: {{ room.tinggi }}%"></div>
+            <span>{{ room.name }}</span>
           </div>
-          <div class="bar-item">
-            <strong>10</strong>
-            <div class="bar" style="height: 50%"></div>
-            <span>Ruang 2<br />(DKV)</span>
-          </div>
-          <div class="bar-item">
-            <strong>14</strong>
-            <div class="bar" style="height: 70%"></div>
-            <span>Ruang 3<br />(TKJ)</span>
-          </div>
-          <div class="bar-item">
-            <strong>12</strong>
-            <div class="bar" style="height: 60%"></div>
-            <span>Ruang 4<br />(Umum)</span>
-          </div>
+          {% endfor %}
         </div>
       </div>
 
       <div class="content-card">
         <h3>⇄ &nbsp; Status Barang</h3>
         <div class="status-content">
-          <div class="donut-chart">
+          <div
+            class="donut-chart"
+            style="background: conic-gradient(#b83245 0% {{ statistik.persen_tersedia }}%, #df8992 {{ statistik.persen_tersedia }}% {{ statistik.persen_sampai_dipinjam }}%, #f3dfe2 {{ statistik.persen_sampai_dipinjam }}% 100%)"
+          >
             <div class="donut-center">
-              <strong>48</strong>
+              <strong>{{ statistik.total }}</strong>
               <span>Total</span>
             </div>
           </div>
           <div class="legend">
-            <p><i class="dot available"></i> Tersedia <b>32</b></p>
-            <p><i class="dot borrowed"></i> Dipinjam <b>8</b></p>
-            <p><i class="dot damaged"></i> Rusak <b>8</b></p>
+            <p>
+              <i class="dot available"></i> Tersedia
+              <b>{{ statistik.tersedia }}</b>
+            </p>
+            <p>
+              <i class="dot borrowed"></i> Dipinjam
+              <b>{{ statistik.dipinjam }}</b>
+            </p>
+            <p>
+              <i class="dot damaged"></i> Perbaikan
+              <b>{{ statistik.perbaikan }}</b>
+            </p>
           </div>
         </div>
       </div>
@@ -109,7 +110,7 @@
     <section class="content-card activity-card">
       <div class="activity-heading">
         <h3>◷ &nbsp; Aktivitas Terbaru</h3>
-        <a href="#">Lihat Semua →</a>
+        <a href="{{ url_for('laporan') }}">Lihat Semua →</a>
       </div>
 
       <div class="table-wrapper">
@@ -124,41 +125,24 @@
             </tr>
           </thead>
           <tbody>
+            {% for loan in aktivitas %}
             <tr>
-              <td>1</td>
-              <td>22 Sep 2025 10:24</td>
-              <td class="activity-type">Peminjaman</td>
-              <td>PC-005 (Ruang 1 → Ruang 3)</td>
-              <td>Pembimbing RPL</td>
+              <td>{{ loop.index }}</td>
+              <td>{{ loan.borrow_date }}</td>
+              <td class="activity-type">{{ loan.status }}</td>
+              <td>
+                {{ loan.code }} · {{ loan.barang }} ({{ loan.origin_room or '—'
+                }} → {{ loan.destination_room or '—' }})
+              </td>
+              <td>{{ loan.borrower }}</td>
             </tr>
+            {% else %}
             <tr>
-              <td>2</td>
-              <td>22 Sep 2025 09:50</td>
-              <td class="activity-type">Pengembalian</td>
-              <td>PC-003 (Ruang 2)</td>
-              <td>Pembimbing DKV</td>
+              <td colspan="5" class="empty-state">
+                Belum ada aktivitas peminjaman.
+              </td>
             </tr>
-            <tr>
-              <td>3</td>
-              <td>21 Sep 2025 16:30</td>
-              <td class="activity-type">Tambah Barang</td>
-              <td>Monitor 24" (Ruang 2)</td>
-              <td>Admin</td>
-            </tr>
-            <tr>
-              <td>4</td>
-              <td>21 Sep 2025 14:12</td>
-              <td class="activity-type">Perpindahan</td>
-              <td>PC-008 (Ruang 3 → Ruang 1)</td>
-              <td>Pembimbing TKJ</td>
-            </tr>
-            <tr>
-              <td>5</td>
-              <td>21 Sep 2025 11:05</td>
-              <td class="activity-type">Update Data</td>
-              <td>PC-010 (Spesifikasi)</td>
-              <td>Admin</td>
-            </tr>
+            {% endfor %}
           </tbody>
         </table>
       </div>

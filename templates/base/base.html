@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -8,16 +8,8 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/style.css') }}"
     />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/dashboard.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/profil_admin.css') }}"
-    />
   </head>
-  <body>
+  <body class="{% if request.endpoint in ['login', 'register'] %}auth-page{% else %}app-page{% endif %}">
     {% block content %}{% endblock %}
     <script src="{{ url_for('static', filename='js/style.js') }}"></script>
   </body>

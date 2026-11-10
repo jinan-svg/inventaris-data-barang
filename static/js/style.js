@@ -30,4 +30,30 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
+
+  // Pencarian dan filter tabel inventaris (berjalan pada data yang sedang tampil).
+  const searchFields = document.querySelectorAll("#inventory-search, .table-search");
+  searchFields.forEach(function (field) {
+    field.addEventListener("input", function () {
+      const table = field.closest(".content-card").querySelector("tbody");
+      const query = field.value.toLocaleLowerCase("id");
+      table.querySelectorAll("tr").forEach(function (row) {
+        row.hidden = !row.textContent.toLocaleLowerCase("id").includes(query);
+      });
+    });
+  });
+
+  const statusFilter = document.getElementById("status-filter");
+  if (statusFilter) {
+    statusFilter.addEventListener("change", function () {
+      document.querySelectorAll("#inventory-table tbody tr").forEach(function (row) {
+        row.hidden = (statusFilter.value && !row.cells[5]?.textContent.includes(statusFilter.value)) ||
+          !row.textContent.toLocaleLowerCase("id").includes(document.getElementById("inventory-search").value.toLocaleLowerCase("id"));
+      });
+    });
+    document.getElementById("inventory-search").addEventListener("input", function () {
+      statusFilter.dispatchEvent(new Event("change"));
+    });
+  }
+
 });
