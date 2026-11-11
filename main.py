@@ -16,7 +16,14 @@ from repository import db_session, daftar_barang, execute, init_db, query_all, q
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-this-secret")
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax")
 init_db()
+
+
+def is_duplicate_key_error(error):
+    """Kenali error duplikat dari MySQL maupun SQLite lama."""
+    error_code = error.args[0] if getattr(error, "args", ()) else None
+    return error_code == 1062 or "UNIQUE" in str(error).upper()
 
 
 @app.cli.command("create-admin")
@@ -37,7 +44,7 @@ def create_admin():
         execute("INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, 'Admin')",
                 (name.strip(), username.strip(), generate_password_hash(password)))
     except Exception as error:
-        if "UNIQUE" in str(error):
+        if is_duplicate_key_error(error):
             raise click.ClickException("Username tersebut sudah digunakan.") from error
         raise
     click.echo("Akun Admin berhasil dibuat.")
@@ -145,7 +152,7 @@ def pengguna():
                 flash(f"Akun {role} berhasil dibuat.", "success")
                 return redirect(url_for("pengguna"))
             except Exception as error:
-                if "UNIQUE" in str(error):
+                if is_duplicate_key_error(error):
                     flash("Username tersebut sudah digunakan.", "error")
                 else:
                     raise
@@ -220,7 +227,7 @@ def edit_pengguna(user_id):
                 flash("Data akun berhasil diperbarui.", "success")
                 return redirect(url_for("pengguna"))
             except Exception as error:
-                if "UNIQUE" in str(error):
+                if is_duplicate_key_error(error):
                     flash("Username tersebut sudah digunakan.", "error")
                 else:
                     raise
@@ -294,28 +301,34 @@ def form_barang(item_id=None):
         return redirect(url_for("data_barang"))
     if request.method == "POST":
         submitted_status = request.form.get("status", "Tersedia")
+        submitted_condition = request.form.get("condition", "Baik")
         if submitted_status not in ("Tersedia", "Perbaikan"):
             flash("Status Dipinjam hanya dapat diubah melalui transaksi peminjaman.", "error")
             return redirect(url_for("data_barang"))
+        if submitted_condition not in ("Baik", "Perlu Perbaikan", "Rusak"):
+            flash("Pilih kondisi barang yang valid.", "error")
+            return redirect(url_for("data_barang"))
         if item and item["status"] == "Dipinjam":
             submitted_status = "Dipinjam"
-        room_id = item["room_id"] if item else request.form.get("room_id") or None
+        room_id = item["room_id"] if item else request.form.get("room_id", type=int)
         values = (request.form.get("code", "").strip(), request.form.get("name", "").strip(),
                   request.form.get("category", "").strip(), room_id,
-                  request.form.get("condition", "Baik"), submitted_status)
+                  submitted_condition, submitted_status)
         if not all(values[index] for index in (0, 1, 2)):
             flash("Kode, nama, dan kategori barang wajib diisi.", "error")
+        elif room_id and not query_one("SELECT id FROM rooms WHERE id=?", (room_id,)):
+            flash("Pilih ruangan yang tersedia.", "error")
         else:
             try:
                 if item:
-                    execute("UPDATE items SET code=?, name=?, category=?, room_id=?, condition=?, status=? WHERE id=?", (*values, item_id))
+                    execute("UPDATE items SET code=?, name=?, category=?, room_id=?, `condition`=?, status=? WHERE id=?", (*values, item_id))
                     flash("Data barang berhasil diperbarui.", "success")
                 else:
-                    execute("INSERT INTO items (code, name, category, room_id, condition, status) VALUES (?, ?, ?, ?, ?, ?)", values)
+                    execute("INSERT INTO items (code, name, category, room_id, `condition`, status) VALUES (?, ?, ?, ?, ?, ?)", values)
                     flash("Barang berhasil ditambahkan.", "success")
                 return redirect(url_for("data_barang"))
             except Exception as error:
-                if "UNIQUE" in str(error):
+                if is_duplicate_key_error(error):
                     flash("Kode barang sudah digunakan.", "error")
                 else:
                     raise
@@ -326,6 +339,9 @@ def form_barang(item_id=None):
 @app.post("/barang/<int:item_id>/hapus")
 @admin_required
 def hapus_barang(item_id):
+    if not query_one("SELECT id FROM items WHERE id=?", (item_id,)):
+        flash("Barang tidak ditemukan.", "error")
+        return redirect(url_for("data_barang"))
     try:
         execute("DELETE FROM items WHERE id = ?", (item_id,))
         flash("Barang berhasil dihapus.", "success")
@@ -417,7 +433,7 @@ def pengembalian():
                     WHERE id=? AND status='Dipinjam'
                 """, (date.today().isoformat(), condition, returned_room_id, loan_id))
                 if updated.rowcount:
-                    db.execute("UPDATE items SET status=?, condition=?, room_id=? WHERE id=?",
+                    db.execute("UPDATE items SET status=?, `condition`=?, room_id=? WHERE id=?",
                                (item_status, condition, returned_room_id, loan["item_id"]))
             if updated.rowcount:
                 flash("Pengembalian berhasil dicatat.", "success")
@@ -457,7 +473,7 @@ def ruangan():
                 flash("Ruangan berhasil ditambahkan.", "success")
                 return redirect(url_for("ruangan"))
             except Exception as error:
-                if "UNIQUE" in str(error):
+                if is_duplicate_key_error(error):
                     flash("Kode atau nama ruangan sudah digunakan.", "error")
                 else:
                     raise
@@ -487,7 +503,7 @@ def edit_ruangan(room_id):
                 flash("Data ruangan berhasil diperbarui.", "success")
                 return redirect(url_for("ruangan"))
             except Exception as error:
-                if "UNIQUE" in str(error):
+                if is_duplicate_key_error(error):
                     flash("Kode atau nama ruangan sudah digunakan.", "error")
                 else:
                     raise
@@ -509,7 +525,7 @@ def hapus_ruangan(room_id):
         flash("Ruangan ini masih tercatat dalam riwayat peminjaman.", "error")
         return redirect(url_for("ruangan"))
     execute("DELETE FROM rooms WHERE id = ?", (room_id,))
-    flash("Ruangan dihapus. Barang terkait dipindahkan ke status belum ditempatkan.", "success")
+    flash("Ruangan berhasil dihapus.", "success")
     return redirect(url_for("ruangan"))
 
 

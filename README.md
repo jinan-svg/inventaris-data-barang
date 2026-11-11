@@ -1,15 +1,17 @@
 # Inventaris Media Com
 
-Aplikasi inventaris sederhana dengan Flask dan SQLite.
+Aplikasi inventaris sederhana dengan Flask dan MySQL Laragon.
 
 ## Menjalankan aplikasi
 
-1. Aktifkan virtual environment project.
-2. Jika Flask belum tersedia, jalankan `pip install -r requirements.txt`.
-3. Jalankan `python main.py` lalu buka `http://127.0.0.1:5000`.
-4. Jika belum ada akun Admin, buat Admin pertama dari terminal dengan `flask --app main create-admin`, lalu ikuti prompt nama, username, dan password. Jika Admin sudah ada, minta Admin tersebut membuat akun dari menu **Pengguna**.
+1. Jalankan Laragon dan pastikan layanan MySQL aktif.
+2. Aktifkan virtual environment project.
+3. Instal dependensi dengan `pip install -r requirements.txt`.
+4. Secara default aplikasi memakai MySQL Laragon di `127.0.0.1:3306`, user `root`, password kosong, dan membuat database `inventaris_mediacom` otomatis. Skema SQL juga tersedia di `database/schema.sql`. Jika konfigurasi Laragon berbeda, atur variabel lingkungan `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, dan `MYSQL_DATABASE`.
+5. Jalankan `python main.py`, lalu buka `http://127.0.0.1:5000`.
+6. Jika belum ada Admin, buat akun pertama dengan `flask --app main create-admin`. Admin selanjutnya dapat dibuat dari menu **Pengguna**.
 
-Database dibuat otomatis di `instance/inventaris.db` saat aplikasi dijalankan. Ruangan dan inventaris awal juga ditambahkan otomatis bila tabel masih kosong. Salin file database sebelum melakukan pemindahan atau perubahan besar.
+Saat aplikasi pertama kali dijalankan, data dari `instance/inventaris.db` lama disalin ke MySQL jika database tujuan benar-benar kosong. File SQLite lama tidak dihapus. Ruangan dan inventaris contoh ditambahkan hanya jika tabel terkait kosong. Database operasional MySQL tetap berada di komputer Laragon; jangan commit dump yang berisi akun, hash password, atau inventaris internal ke GitHub.
 
 Pendaftaran publik ditutup. Admin membuat dan mengelola maksimal 2 akun Admin serta 4 akun Pembimbing melalui menu **Pengguna**. Setiap Pembimbing harus mendapat ruangan yang unik. Empat ruangan awal dapat diganti namanya di menu **Ruangan**. Akun Admin mengelola pengguna, barang, dan ruangan; Admin maupun Pembimbing dapat mencatat transaksi.
 
