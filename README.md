@@ -1,20 +1,17 @@
 # Inventaris Media Com
 
-Aplikasi inventaris sederhana dengan Flask dan MySQL Laragon.
+Aplikasi inventaris Flask yang memakai satu database MySQL Laragon: `inventaris_mediacom`.
 
 ## Menjalankan aplikasi
 
-1. Jalankan Laragon dan pastikan layanan MySQL aktif.
-2. Aktifkan virtual environment project.
-3. Instal dependensi dengan `pip install -r requirements.txt`.
-4. Secara default aplikasi memakai MySQL Laragon di `127.0.0.1:3306`, user `root`, password kosong, dan membuat database `inventaris_mediacom` otomatis. Skema SQL juga tersedia di `database/schema.sql`. Jika konfigurasi Laragon berbeda, atur variabel lingkungan `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, dan `MYSQL_DATABASE`.
-5. Jalankan `python main.py`, lalu buka `http://127.0.0.1:5000`.
-6. Jika belum ada Admin, buat akun pertama dengan `flask --app main create-admin`. Admin selanjutnya dapat dibuat dari menu **Pengguna**.
+1. Buka Laragon dan aktifkan MySQL.
+2. Aktifkan virtual environment, lalu jalankan `pip install -r requirements.txt`.
+3. Jalankan `python main.py` dan buka `http://127.0.0.1:5000`.
 
-Tabel lokasi di MySQL bernama `ruangan`. Saat aplikasi diperbarui dari versi yang memakai tabel `rooms`, tabel tersebut diubah namanya otomatis tanpa menghapus baris atau relasinya. Data dari `instance/inventaris.db` lama disalin ke MySQL jika database tujuan benar-benar kosong; file SQLite lama tidak dihapus. Ruangan dan inventaris contoh ditambahkan hanya jika tabel terkait kosong. Database operasional MySQL tetap berada di komputer Laragon; jangan commit dump yang berisi akun, hash password, atau inventaris internal ke GitHub.
+Aplikasi otomatis membuat database `inventaris_mediacom` dan tabel yang dibutuhkan (`barang`, `pinjaman`, `ruangan`, `pengguna`) jika belum ada. Data awal ruangan dan barang juga dibuat otomatis. Database lain di Laragon tidak dipakai atau diubah oleh aplikasi ini.
 
-Pendaftaran publik ditutup. Admin membuat dan mengelola maksimal 2 akun Admin serta 4 akun Pembimbing melalui menu **Pengguna**. Setiap Pembimbing harus mendapat ruangan yang unik. Empat ruangan awal dapat diganti namanya di menu **Ruangan**. Akun Admin mengelola pengguna, barang, dan ruangan; Admin maupun Pembimbing dapat mencatat transaksi.
+File `database/inventaris_mediacom.sql` adalah snapshot database untuk pemulihan/presentasi. Impor file itu melalui phpMyAdmin hanya ke database kosong; jangan impor ulang ke database yang sudah berisi data.
 
-Peminjaman mencatat ruangan asal PC, ruangan tujuan, peminjam, dan tanggal. Lokasi inventaris berubah ke ruangan tujuan selama dipinjam. Pengembalian mencatat kondisi dan ruangan tempat PC dikembalikan.
+Jika belum ada akun Admin, buat dari terminal dengan `flask --app main create-admin`. Pendaftaran publik ditutup. Admin mengelola akun, barang, dan ruangan; Admin serta Pembimbing dapat mencatat peminjaman dan pengembalian.
 
-Untuk penggunaan di luar komputer lokal, atur `SECRET_KEY` dengan nilai acak yang aman dan jalankan aplikasi menggunakan server produksi Flask yang sesuai. Server bawaan `python main.py` ditujukan untuk pengembangan lokal.
+Untuk mengganti koneksi Laragon, atur `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, dan `MYSQL_PASSWORD`. Nama database tetap `inventaris_mediacom` agar aplikasi tidak membuat database kedua.

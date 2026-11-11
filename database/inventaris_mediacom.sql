@@ -9,10 +9,10 @@
 /*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
 /*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
-DROP TABLE IF EXISTS `items`;
+DROP TABLE IF EXISTS `barang`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `items` (
+CREATE TABLE `barang` (
   `id` int NOT NULL AUTO_INCREMENT,
   `code` varchar(100) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -27,15 +27,38 @@ CREATE TABLE `items` (
 ) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-LOCK TABLES `items` WRITE;
-/*!40000 ALTER TABLE `items` DISABLE KEYS */;
-INSERT INTO `items` VALUES (2,'INV-002','Monitor LED 24 inci','Monitor',2,'Baik','Tersedia'),(3,'INV-003','Printer Epson L3210','Printer',4,'Perlu Perbaikan','Perbaikan'),(4,'INV-004','Keyboard Logitech K120','Aksesori',3,'Baik','Tersedia');
-/*!40000 ALTER TABLE `items` ENABLE KEYS */;
+LOCK TABLES `barang` WRITE;
+/*!40000 ALTER TABLE `barang` DISABLE KEYS */;
+INSERT INTO `barang` VALUES (2,'INV-002','Monitor LED 24 inci','Monitor',2,'Baik','Tersedia'),(3,'INV-003','Printer Epson L3210','Printer',4,'Perlu Perbaikan','Perbaikan'),(4,'INV-004','Keyboard Logitech K120','Aksesori',3,'Baik','Tersedia');
+/*!40000 ALTER TABLE `barang` ENABLE KEYS */;
 UNLOCK TABLES;
-DROP TABLE IF EXISTS `loans`;
+DROP TABLE IF EXISTS `pengguna`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `loans` (
+CREATE TABLE `pengguna` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  `username` varchar(191) NOT NULL,
+  `password_hash` varchar(255) NOT NULL,
+  `role` varchar(30) NOT NULL,
+  `room_id` int DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `unique_pembimbing_room` (`room_id`),
+  CONSTRAINT `fk_users_room` FOREIGN KEY (`room_id`) REFERENCES `ruangan` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+LOCK TABLES `pengguna` WRITE;
+/*!40000 ALTER TABLE `pengguna` DISABLE KEYS */;
+INSERT INTO `pengguna` VALUES (2,'najinan','najinan','scrypt:32768:8:1$Sz1OljAdlgZEtaeY$bd4598bbe12f5fc38dec290804396f95c64d1ac19cbb8ca2b3c91a498c1c23698cc50a711a09fa02ff9f0d0f33d4d3c3040cc51b7401e11087f449670281dc38','Admin',NULL,'2026-11-10 01:27:20');
+/*!40000 ALTER TABLE `pengguna` ENABLE KEYS */;
+UNLOCK TABLES;
+DROP TABLE IF EXISTS `pinjaman`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pinjaman` (
   `id` int NOT NULL AUTO_INCREMENT,
   `code` varchar(100) NOT NULL,
   `item_id` int NOT NULL,
@@ -55,15 +78,15 @@ CREATE TABLE `loans` (
   KEY `fk_loans_destination` (`destination_room_id`),
   KEY `fk_loans_returned` (`returned_room_id`),
   CONSTRAINT `fk_loans_destination` FOREIGN KEY (`destination_room_id`) REFERENCES `ruangan` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `fk_loans_item` FOREIGN KEY (`item_id`) REFERENCES `items` (`id`),
+  CONSTRAINT `fk_loans_item` FOREIGN KEY (`item_id`) REFERENCES `barang` (`id`),
   CONSTRAINT `fk_loans_origin` FOREIGN KEY (`origin_room_id`) REFERENCES `ruangan` (`id`) ON DELETE SET NULL,
   CONSTRAINT `fk_loans_returned` FOREIGN KEY (`returned_room_id`) REFERENCES `ruangan` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
-LOCK TABLES `loans` WRITE;
-/*!40000 ALTER TABLE `loans` DISABLE KEYS */;
-/*!40000 ALTER TABLE `loans` ENABLE KEYS */;
+LOCK TABLES `pinjaman` WRITE;
+/*!40000 ALTER TABLE `pinjaman` DISABLE KEYS */;
+/*!40000 ALTER TABLE `pinjaman` ENABLE KEYS */;
 UNLOCK TABLES;
 DROP TABLE IF EXISTS `ruangan`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
@@ -84,29 +107,6 @@ LOCK TABLES `ruangan` WRITE;
 /*!40000 ALTER TABLE `ruangan` DISABLE KEYS */;
 INSERT INTO `ruangan` VALUES (1,'R-01','Ruang RPL','Pembimbing RPL',''),(2,'R-02','Ruang DKV','Pembimbing DKV',''),(3,'R-03','Ruang TKJ','Pembimbing TKJ',''),(4,'R-04','Ruang Admin','Administrator','');
 /*!40000 ALTER TABLE `ruangan` ENABLE KEYS */;
-UNLOCK TABLES;
-DROP TABLE IF EXISTS `users`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `users` (
-  `id` int NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `username` varchar(191) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  `role` varchar(30) NOT NULL,
-  `room_id` int DEFAULT NULL,
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`),
-  UNIQUE KEY `unique_pembimbing_room` (`room_id`),
-  CONSTRAINT `fk_users_room` FOREIGN KEY (`room_id`) REFERENCES `ruangan` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
-LOCK TABLES `users` WRITE;
-/*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (2,'najinan','najinan','scrypt:32768:8:1$Sz1OljAdlgZEtaeY$bd4598bbe12f5fc38dec290804396f95c64d1ac19cbb8ca2b3c91a498c1c23698cc50a711a09fa02ff9f0d0f33d4d3c3040cc51b7401e11087f449670281dc38','Admin',NULL,'2026-11-10 01:27:20');
-/*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
 

@@ -29,7 +29,7 @@ def is_duplicate_key_error(error):
 @app.cli.command("create-admin")
 def create_admin():
     """Buat akun Admin awal dari terminal, tanpa pendaftaran publik."""
-    admin_count = query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Admin'")["jumlah"]
+    admin_count = query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Admin'")["jumlah"]
     if admin_count >= 2:
         click.echo("Batas 2 akun Admin sudah tercapai.")
         return
@@ -41,7 +41,7 @@ def create_admin():
     if len(password) < 8:
         raise click.ClickException("Password harus terdiri dari minimal 8 karakter.")
     try:
-        execute("INSERT INTO users (name, username, password_hash, role) VALUES (?, ?, ?, 'Admin')",
+        execute("INSERT INTO pengguna (name, username, password_hash, role) VALUES (?, ?, ?, 'Admin')",
                 (name.strip(), username.strip(), generate_password_hash(password)))
     except Exception as error:
         if is_duplicate_key_error(error):
@@ -58,7 +58,7 @@ def login_required(view):
             return redirect(url_for("login"))
         user = query_one("""
             SELECT users.name, users.username, users.role, users.room_id, ruangan.name AS room_name
-            FROM users LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.id=?
+            FROM pengguna AS users LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.id=?
         """, (session["user_id"],))
         if not user:
             session.clear()
@@ -91,7 +91,7 @@ def login():
         password = request.form.get("password", "")
         role = request.form.get("role", "")
         user = query_one("""
-            SELECT users.*, ruangan.name AS room_name FROM users
+            SELECT users.*, ruangan.name AS room_name FROM pengguna AS users
             LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.username = ?
         """, (username,))
         if user and user["role"] == role and check_password_hash(user["password_hash"], password):
@@ -105,7 +105,7 @@ def login():
             flash("Berhasil login. Selamat datang!", "success")
             return redirect(url_for("dashboard"))
         flash("Username, password, atau jenis akses tidak cocok.", "error")
-    admin_exists = query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Admin'")["jumlah"] > 0
+    admin_exists = query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Admin'")["jumlah"] > 0
     return render_template("login.html", title="Login", admin_exists=admin_exists)
 
 
@@ -135,19 +135,19 @@ def pengguna():
             flash("Nama dan username wajib diisi. Password minimal 8 karakter.", "error")
         elif role not in ("Admin", "Pembimbing"):
             flash("Pilih jenis akun yang valid.", "error")
-        elif role == "Admin" and query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Admin'")["jumlah"] >= 2:
+        elif role == "Admin" and query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Admin'")["jumlah"] >= 2:
             flash("Batas maksimal 2 akun Admin sudah tercapai.", "error")
-        elif role == "Pembimbing" and query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Pembimbing'")["jumlah"] >= 4:
+        elif role == "Pembimbing" and query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Pembimbing'")["jumlah"] >= 4:
             flash("Batas maksimal 4 akun Pembimbing sudah tercapai.", "error")
         elif role == "Pembimbing" and not room_id:
             flash("Setiap akun Pembimbing harus ditugaskan ke satu ruangan.", "error")
-        elif role == "Pembimbing" and query_one("SELECT id FROM users WHERE role='Pembimbing' AND room_id=?", (room_id,)):
+        elif role == "Pembimbing" and query_one("SELECT id FROM pengguna AS users WHERE role='Pembimbing' AND room_id=?", (room_id,)):
             flash("Ruangan tersebut sudah memiliki akun Pembimbing.", "error")
         elif role == "Pembimbing" and not query_one("SELECT id FROM ruangan WHERE id=?", (room_id,)):
             flash("Pilih ruangan yang tersedia.", "error")
         else:
             try:
-                execute("INSERT INTO users (name, username, password_hash, role, room_id) VALUES (?, ?, ?, ?, ?)",
+                execute("INSERT INTO pengguna (name, username, password_hash, role, room_id) VALUES (?, ?, ?, ?, ?)",
                         (name, username, generate_password_hash(password), role, room_id if role == "Pembimbing" else None))
                 flash(f"Akun {role} berhasil dibuat.", "success")
                 return redirect(url_for("pengguna"))
@@ -158,13 +158,13 @@ def pengguna():
                     raise
     users = query_all("""
         SELECT users.id, users.name, users.username, users.role, users.room_id,
-               ruangan.name AS room_name FROM users
+               ruangan.name AS room_name FROM pengguna AS users
         LEFT JOIN ruangan ON ruangan.id=users.room_id ORDER BY users.role, users.name
     """)
     ruangan = query_all("""
         SELECT ruangan.id, ruangan.name FROM ruangan
         WHERE ruangan.id NOT IN (
-            SELECT room_id FROM users WHERE role='Pembimbing' AND room_id IS NOT NULL
+            SELECT room_id FROM pengguna AS users WHERE role='Pembimbing' AND room_id IS NOT NULL
         ) ORDER BY ruangan.code
     """)
     counts = {
@@ -177,15 +177,15 @@ def pengguna():
 @app.post("/pengguna/<int:user_id>/hapus")
 @admin_required
 def hapus_pengguna(user_id):
-    target = query_one("SELECT id, role FROM users WHERE id=?", (user_id,))
+    target = query_one("SELECT id, role FROM pengguna AS users WHERE id=?", (user_id,))
     if not target:
         flash("Akun tidak ditemukan.", "error")
     elif user_id == session["user_id"]:
         flash("Akun yang sedang dipakai tidak dapat dihapus.", "error")
-    elif target["role"] == "Admin" and query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Admin'")["jumlah"] <= 1:
+    elif target["role"] == "Admin" and query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Admin'")["jumlah"] <= 1:
         flash("Admin terakhir tidak dapat dihapus.", "error")
     else:
-        execute("DELETE FROM users WHERE id=?", (user_id,))
+        execute("DELETE FROM pengguna AS users WHERE id=?", (user_id,))
         flash("Akun berhasil dihapus.", "success")
     return redirect(url_for("pengguna"))
 
@@ -193,7 +193,7 @@ def hapus_pengguna(user_id):
 @app.route("/pengguna/<int:user_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_pengguna(user_id):
-    target = query_one("SELECT * FROM users WHERE id=?", (user_id,))
+    target = query_one("SELECT * FROM pengguna AS users WHERE id=?", (user_id,))
     if not target:
         flash("Akun tidak ditemukan.", "error")
         return redirect(url_for("pengguna"))
@@ -202,10 +202,10 @@ def edit_pengguna(user_id):
         username = request.form.get("username", "").strip()
         role = request.form.get("role", "")
         room_id = request.form.get("room_id", type=int)
-        admin_count = query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Admin' AND id!=?", (user_id,))["jumlah"]
-        mentor_count = query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Pembimbing' AND id!=?", (user_id,))["jumlah"]
+        admin_count = query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Admin' AND id!=?", (user_id,))["jumlah"]
+        mentor_count = query_one("SELECT COUNT(*) AS jumlah FROM pengguna AS users WHERE role='Pembimbing' AND id!=?", (user_id,))["jumlah"]
         room_exists = query_one("SELECT id FROM ruangan WHERE id=?", (room_id,)) if room_id else None
-        room_taken = query_one("SELECT id FROM users WHERE role='Pembimbing' AND room_id=? AND id!=?", (room_id, user_id)) if room_id else None
+        room_taken = query_one("SELECT id FROM pengguna AS users WHERE role='Pembimbing' AND room_id=? AND id!=?", (room_id, user_id)) if room_id else None
         if not name or not username:
             flash("Nama dan username wajib diisi.", "error")
         elif role not in ("Admin", "Pembimbing"):
@@ -222,7 +222,7 @@ def edit_pengguna(user_id):
             flash("Ruangan tersebut sudah memiliki akun Pembimbing.", "error")
         else:
             try:
-                execute("UPDATE users SET name=?, username=?, role=?, room_id=? WHERE id=?",
+                execute("UPDATE pengguna SET name=?, username=?, role=?, room_id=? WHERE id=?",
                         (name, username, role, room_id if role == "Pembimbing" else None, user_id))
                 flash("Data akun berhasil diperbarui.", "success")
                 return redirect(url_for("pengguna"))
@@ -233,7 +233,7 @@ def edit_pengguna(user_id):
                     raise
     ruangan = query_all("""
         SELECT ruangan.id, ruangan.name FROM ruangan WHERE ruangan.id NOT IN (
-            SELECT room_id FROM users WHERE role='Pembimbing' AND room_id IS NOT NULL AND id!=?
+            SELECT room_id FROM pengguna AS users WHERE role='Pembimbing' AND room_id IS NOT NULL AND id!=?
         ) ORDER BY ruangan.code
     """, (user_id,))
     return render_template("form_pengguna.html", title="Ubah Akun", user=target, ruangan=ruangan)
@@ -243,12 +243,12 @@ def edit_pengguna(user_id):
 @admin_required
 def reset_password_pengguna(user_id):
     password = request.form.get("password", "")
-    if not query_one("SELECT id FROM users WHERE id=?", (user_id,)):
+    if not query_one("SELECT id FROM pengguna AS users WHERE id=?", (user_id,)):
         flash("Akun tidak ditemukan.", "error")
     elif len(password) < 8:
         flash("Password baru minimal 8 karakter.", "error")
     else:
-        execute("UPDATE users SET password_hash=? WHERE id=?", (generate_password_hash(password), user_id))
+        execute("UPDATE pengguna SET password_hash=? WHERE id=?", (generate_password_hash(password), user_id))
         flash("Password akun berhasil diperbarui.", "success")
     return redirect(url_for("pengguna"))
 
@@ -259,7 +259,7 @@ def dashboard():
     barang = daftar_barang()
     ruangan = query_all("""
         SELECT ruangan.name, COUNT(items.id) AS total FROM ruangan
-        LEFT JOIN items ON items.room_id = ruangan.id GROUP BY ruangan.id ORDER BY ruangan.code
+        LEFT JOIN barang AS items ON items.room_id = ruangan.id GROUP BY ruangan.id ORDER BY ruangan.code
     """)
     statistik = {
         "total": len(barang),
@@ -271,7 +271,7 @@ def dashboard():
         SELECT loans.code, loans.borrower, loans.borrow_date, loans.due_date,
                loans.status, items.name AS barang, origin.name AS origin_room,
                destination.name AS destination_room
-        FROM loans JOIN items ON items.id = loans.item_id
+        FROM pinjaman AS loans JOIN barang AS items ON items.id = loans.item_id
         LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
         LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         ORDER BY loans.id DESC LIMIT 6
@@ -295,7 +295,7 @@ def data_barang():
 @app.route("/barang/<int:item_id>/edit", methods=["GET", "POST"])
 @admin_required
 def form_barang(item_id=None):
-    item = query_one("SELECT * FROM items WHERE id = ?", (item_id,)) if item_id else None
+    item = query_one("SELECT * FROM barang AS items WHERE id = ?", (item_id,)) if item_id else None
     if item_id and not item:
         flash("Barang tidak ditemukan.", "error")
         return redirect(url_for("data_barang"))
@@ -321,10 +321,10 @@ def form_barang(item_id=None):
         else:
             try:
                 if item:
-                    execute("UPDATE items SET code=?, name=?, category=?, room_id=?, `condition`=?, status=? WHERE id=?", (*values, item_id))
+                    execute("UPDATE barang SET code=?, name=?, category=?, room_id=?, `condition`=?, status=? WHERE id=?", (*values, item_id))
                     flash("Data barang berhasil diperbarui.", "success")
                 else:
-                    execute("INSERT INTO items (code, name, category, room_id, `condition`, status) VALUES (?, ?, ?, ?, ?, ?)", values)
+                    execute("INSERT INTO barang (code, name, category, room_id, `condition`, status) VALUES (?, ?, ?, ?, ?, ?)", values)
                     flash("Barang berhasil ditambahkan.", "success")
                 return redirect(url_for("data_barang"))
             except Exception as error:
@@ -339,11 +339,11 @@ def form_barang(item_id=None):
 @app.post("/barang/<int:item_id>/hapus")
 @admin_required
 def hapus_barang(item_id):
-    if not query_one("SELECT id FROM items WHERE id=?", (item_id,)):
+    if not query_one("SELECT id FROM barang AS items WHERE id=?", (item_id,)):
         flash("Barang tidak ditemukan.", "error")
         return redirect(url_for("data_barang"))
     try:
-        execute("DELETE FROM items WHERE id = ?", (item_id,))
+        execute("DELETE FROM barang AS items WHERE id = ?", (item_id,))
         flash("Barang berhasil dihapus.", "success")
     except Exception:
         flash("Barang yang memiliki riwayat transaksi tidak dapat dihapus.", "error")
@@ -359,7 +359,7 @@ def peminjaman():
         destination_room_id = session.get("room_id") if session.get("role") == "Pembimbing" else request.form.get("destination_room_id", type=int)
         borrow_date = request.form.get("borrow_date", "")
         due_date = request.form.get("due_date", "")
-        item = query_one("SELECT * FROM items WHERE id = ? AND status = 'Tersedia'", (item_id,))
+        item = query_one("SELECT * FROM barang AS items WHERE id = ? AND status = 'Tersedia'", (item_id,))
         destination = query_one("SELECT id FROM ruangan WHERE id=?", (destination_room_id,)) if destination_room_id else None
         try:
             valid_dates = date.fromisoformat(borrow_date) <= date.fromisoformat(due_date)
@@ -372,12 +372,12 @@ def peminjaman():
             code = f"PMJ-{date.today():%y%m%d}-{secrets.token_hex(3).upper()}"
             with db_session() as db:
                 updated = db.execute(
-                    "UPDATE items SET status='Dipinjam', room_id=? WHERE id=? AND status='Tersedia'",
+                    "UPDATE barang SET status='Dipinjam', room_id=? WHERE id=? AND status='Tersedia'",
                     (destination_room_id, item_id),
                 )
                 if updated.rowcount:
                     db.execute("""
-                        INSERT INTO loans (code, item_id, borrower, borrow_date, due_date,
+                        INSERT INTO pinjaman (code, item_id, borrower, borrow_date, due_date,
                                            origin_room_id, destination_room_id)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
                     """, (code, item_id, borrower, borrow_date, due_date, item["room_id"], destination_room_id))
@@ -389,20 +389,20 @@ def peminjaman():
     if session.get("role") == "Pembimbing":
         items = query_all("""
             SELECT items.id, items.code, items.name, items.room_id, ruangan.name AS origin_room
-            FROM items JOIN ruangan ON ruangan.id=items.room_id
+            FROM barang AS items JOIN ruangan ON ruangan.id=items.room_id
             WHERE items.status='Tersedia' AND items.room_id != ? ORDER BY items.name
         """, (session.get("room_id"),)) if session.get("room_id") else []
     else:
         items = query_all("""
             SELECT items.id, items.code, items.name, items.room_id, ruangan.name AS origin_room
-            FROM items JOIN ruangan ON ruangan.id=items.room_id
+            FROM barang AS items JOIN ruangan ON ruangan.id=items.room_id
             WHERE items.status='Tersedia' ORDER BY items.name
         """)
     ruangan = query_all("SELECT id, name FROM ruangan ORDER BY code") if session.get("role") == "Admin" else []
     loans = query_all("""
         SELECT loans.*, items.name AS item_name, origin.name AS origin_room,
                destination.name AS destination_room
-        FROM loans JOIN items ON items.id = loans.item_id
+        FROM pinjaman AS loans JOIN barang AS items ON items.id = loans.item_id
         LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
         LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         ORDER BY loans.id DESC
@@ -417,7 +417,7 @@ def pengembalian():
     if request.method == "POST":
         loan_id = request.form.get("loan_id", type=int)
         condition = request.form.get("return_condition", "Baik")
-        loan = query_one("SELECT * FROM loans WHERE id = ? AND status = 'Dipinjam'", (loan_id,))
+        loan = query_one("SELECT * FROM pinjaman AS loans WHERE id = ? AND status = 'Dipinjam'", (loan_id,))
         if loan:
             if condition not in ("Baik", "Perlu Perbaikan", "Rusak"):
                 flash("Pilih kondisi komputer yang valid.", "error")
@@ -429,11 +429,11 @@ def pengembalian():
             item_status = "Tersedia" if condition == "Baik" else "Perbaikan"
             with db_session() as db:
                 updated = db.execute("""
-                    UPDATE loans SET status='Dikembalikan', returned_at=?, return_condition=?, returned_room_id=?
+                    UPDATE pinjaman SET status='Dikembalikan', returned_at=?, return_condition=?, returned_room_id=?
                     WHERE id=? AND status='Dipinjam'
                 """, (date.today().isoformat(), condition, returned_room_id, loan_id))
                 if updated.rowcount:
-                    db.execute("UPDATE items SET status=?, `condition`=?, room_id=? WHERE id=?",
+                    db.execute("UPDATE barang SET status=?, `condition`=?, room_id=? WHERE id=?",
                                (item_status, condition, returned_room_id, loan["item_id"]))
             if updated.rowcount:
                 flash("Pengembalian berhasil dicatat.", "success")
@@ -444,8 +444,8 @@ def pengembalian():
         return redirect(url_for("pengembalian"))
     loans = query_all("""
         SELECT loans.*, items.name AS item_name, origin.name AS origin_room,
-               destination.name AS destination_room FROM loans
-        JOIN items ON items.id = loans.item_id
+               destination.name AS destination_room FROM pinjaman AS loans
+        JOIN barang AS items ON items.id = loans.item_id
         LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
         LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         WHERE loans.status='Dipinjam'
@@ -479,7 +479,7 @@ def ruangan():
                     raise
     ruangan = query_all("""
         SELECT ruangan.*, COUNT(items.id) AS item_count FROM ruangan
-        LEFT JOIN items ON items.room_id = ruangan.id GROUP BY ruangan.id ORDER BY ruangan.code
+        LEFT JOIN barang AS items ON items.room_id = ruangan.id GROUP BY ruangan.id ORDER BY ruangan.code
     """)
     return render_template("ruangan.html", title="Data Ruangan", ruangan=ruangan)
 
@@ -513,14 +513,14 @@ def edit_ruangan(room_id):
 @app.post("/ruangan/<int:room_id>/hapus")
 @admin_required
 def hapus_ruangan(room_id):
-    if query_one("SELECT id FROM users WHERE role='Pembimbing' AND room_id=?", (room_id,)):
+    if query_one("SELECT id FROM pengguna AS users WHERE role='Pembimbing' AND room_id=?", (room_id,)):
         flash("Ruangan ini masih ditugaskan kepada Pembimbing. Pindahkan akunnya terlebih dahulu.", "error")
         return redirect(url_for("ruangan"))
-    if query_one("SELECT id FROM items WHERE room_id=?", (room_id,)):
+    if query_one("SELECT id FROM barang AS items WHERE room_id=?", (room_id,)):
         flash("Ruangan ini masih memiliki inventaris. Pindahkan PC terlebih dahulu.", "error")
         return redirect(url_for("ruangan"))
     if query_one("""
-        SELECT id FROM loans WHERE origin_room_id=? OR destination_room_id=? OR returned_room_id=?
+        SELECT id FROM pinjaman AS loans WHERE origin_room_id=? OR destination_room_id=? OR returned_room_id=?
     """, (room_id, room_id, room_id)):
         flash("Ruangan ini masih tercatat dalam riwayat peminjaman.", "error")
         return redirect(url_for("ruangan"))
@@ -536,7 +536,7 @@ def laporan():
     loans = query_all("""
         SELECT loans.*, items.name AS item_name, origin.name AS origin_room,
                destination.name AS destination_room, returned.name AS returned_room
-        FROM loans JOIN items ON items.id=loans.item_id
+        FROM pinjaman AS loans JOIN barang AS items ON items.id=loans.item_id
         LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
         LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         LEFT JOIN ruangan AS returned ON returned.id=loans.returned_room_id
@@ -562,7 +562,7 @@ def ekspor_laporan():
 def profil_admin():
     admin = query_one("""
         SELECT users.name, users.username, users.role, ruangan.name AS room_name
-        FROM users LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.id=?
+        FROM pengguna AS users LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.id=?
     """, (session["user_id"],))
     admin["nama"] = admin.pop("name")
     admin["jabatan"] = admin["role"]
