@@ -10,3 +10,4 @@ vnv/
 instance/*.db
 instance/*.db-shm
 instance/*.db-wal
+database/inventaris_mediacom.sql
