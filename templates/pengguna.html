@@ -11,7 +11,7 @@
       <label>Username<input name="username" autocomplete="off" required></label>
       <label>Password awal<input type="password" name="password" minlength="8" required><small>Minimal 8 karakter. Sampaikan password awal langsung kepada pemilik akun.</small></label>
       <label>Jenis Akses<select name="role" id="account-role" required><option value="Pembimbing" {% if counts.pembimbing >= 4 %}disabled{% endif %} {% if counts.pembimbing < 4 %}selected{% endif %}>Pembimbing</option><option value="Admin" {% if counts.admin >= 2 %}disabled{% endif %} {% if counts.pembimbing >= 4 and counts.admin < 2 %}selected{% endif %}>Admin</option></select></label>
-      <label id="assigned-room-field">Ruangan Pembimbing<select name="room_id"><option value="">Pilih ruangan yang belum ditugaskan</option>{% for room in rooms %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></label>
+      <label id="assigned-room-field">Ruangan Pembimbing<select name="room_id"><option value="">Pilih ruangan yang belum ditugaskan</option>{% for room in ruangan %}<option value="{{ room.id }}">{{ room.name }}</option>{% endfor %}</select></label>
       <div class="form-actions"><button class="primary-action" type="submit" {% if counts.admin >= 2 and counts.pembimbing >= 4 %}disabled{% endif %}>Buat Akun</button></div>
     </form>
   </section>

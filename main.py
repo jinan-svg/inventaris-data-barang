@@ -57,8 +57,8 @@ def login_required(view):
             flash("Silakan login untuk membuka aplikasi.", "error")
             return redirect(url_for("login"))
         user = query_one("""
-            SELECT users.name, users.username, users.role, users.room_id, rooms.name AS room_name
-            FROM users LEFT JOIN rooms ON rooms.id=users.room_id WHERE users.id=?
+            SELECT users.name, users.username, users.role, users.room_id, ruangan.name AS room_name
+            FROM users LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.id=?
         """, (session["user_id"],))
         if not user:
             session.clear()
@@ -91,8 +91,8 @@ def login():
         password = request.form.get("password", "")
         role = request.form.get("role", "")
         user = query_one("""
-            SELECT users.*, rooms.name AS room_name FROM users
-            LEFT JOIN rooms ON rooms.id=users.room_id WHERE users.username = ?
+            SELECT users.*, ruangan.name AS room_name FROM users
+            LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.username = ?
         """, (username,))
         if user and user["role"] == role and check_password_hash(user["password_hash"], password):
             session.clear()
@@ -143,7 +143,7 @@ def pengguna():
             flash("Setiap akun Pembimbing harus ditugaskan ke satu ruangan.", "error")
         elif role == "Pembimbing" and query_one("SELECT id FROM users WHERE role='Pembimbing' AND room_id=?", (room_id,)):
             flash("Ruangan tersebut sudah memiliki akun Pembimbing.", "error")
-        elif role == "Pembimbing" and not query_one("SELECT id FROM rooms WHERE id=?", (room_id,)):
+        elif role == "Pembimbing" and not query_one("SELECT id FROM ruangan WHERE id=?", (room_id,)):
             flash("Pilih ruangan yang tersedia.", "error")
         else:
             try:
@@ -158,20 +158,20 @@ def pengguna():
                     raise
     users = query_all("""
         SELECT users.id, users.name, users.username, users.role, users.room_id,
-               rooms.name AS room_name FROM users
-        LEFT JOIN rooms ON rooms.id=users.room_id ORDER BY users.role, users.name
+               ruangan.name AS room_name FROM users
+        LEFT JOIN ruangan ON ruangan.id=users.room_id ORDER BY users.role, users.name
     """)
-    rooms = query_all("""
-        SELECT rooms.id, rooms.name FROM rooms
-        WHERE rooms.id NOT IN (
+    ruangan = query_all("""
+        SELECT ruangan.id, ruangan.name FROM ruangan
+        WHERE ruangan.id NOT IN (
             SELECT room_id FROM users WHERE role='Pembimbing' AND room_id IS NOT NULL
-        ) ORDER BY rooms.code
+        ) ORDER BY ruangan.code
     """)
     counts = {
         "admin": sum(user["role"] == "Admin" for user in users),
         "pembimbing": sum(user["role"] == "Pembimbing" for user in users),
     }
-    return render_template("pengguna.html", title="Kelola Pengguna", users=users, rooms=rooms, counts=counts)
+    return render_template("pengguna.html", title="Kelola Pengguna", users=users, ruangan=ruangan, counts=counts)
 
 
 @app.post("/pengguna/<int:user_id>/hapus")
@@ -204,7 +204,7 @@ def edit_pengguna(user_id):
         room_id = request.form.get("room_id", type=int)
         admin_count = query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Admin' AND id!=?", (user_id,))["jumlah"]
         mentor_count = query_one("SELECT COUNT(*) AS jumlah FROM users WHERE role='Pembimbing' AND id!=?", (user_id,))["jumlah"]
-        room_exists = query_one("SELECT id FROM rooms WHERE id=?", (room_id,)) if room_id else None
+        room_exists = query_one("SELECT id FROM ruangan WHERE id=?", (room_id,)) if room_id else None
         room_taken = query_one("SELECT id FROM users WHERE role='Pembimbing' AND room_id=? AND id!=?", (room_id, user_id)) if room_id else None
         if not name or not username:
             flash("Nama dan username wajib diisi.", "error")
@@ -231,12 +231,12 @@ def edit_pengguna(user_id):
                     flash("Username tersebut sudah digunakan.", "error")
                 else:
                     raise
-    rooms = query_all("""
-        SELECT rooms.id, rooms.name FROM rooms WHERE rooms.id NOT IN (
+    ruangan = query_all("""
+        SELECT ruangan.id, ruangan.name FROM ruangan WHERE ruangan.id NOT IN (
             SELECT room_id FROM users WHERE role='Pembimbing' AND room_id IS NOT NULL AND id!=?
-        ) ORDER BY rooms.code
+        ) ORDER BY ruangan.code
     """, (user_id,))
-    return render_template("form_pengguna.html", title="Ubah Akun", user=target, rooms=rooms)
+    return render_template("form_pengguna.html", title="Ubah Akun", user=target, ruangan=ruangan)
 
 
 @app.post("/pengguna/<int:user_id>/password")
@@ -258,8 +258,8 @@ def reset_password_pengguna(user_id):
 def dashboard():
     barang = daftar_barang()
     ruangan = query_all("""
-        SELECT rooms.name, COUNT(items.id) AS total FROM rooms
-        LEFT JOIN items ON items.room_id = rooms.id GROUP BY rooms.id ORDER BY rooms.code
+        SELECT ruangan.name, COUNT(items.id) AS total FROM ruangan
+        LEFT JOIN items ON items.room_id = ruangan.id GROUP BY ruangan.id ORDER BY ruangan.code
     """)
     statistik = {
         "total": len(barang),
@@ -272,8 +272,8 @@ def dashboard():
                loans.status, items.name AS barang, origin.name AS origin_room,
                destination.name AS destination_room
         FROM loans JOIN items ON items.id = loans.item_id
-        LEFT JOIN rooms AS origin ON origin.id=loans.origin_room_id
-        LEFT JOIN rooms AS destination ON destination.id=loans.destination_room_id
+        LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
+        LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         ORDER BY loans.id DESC LIMIT 6
     """)
     for room in ruangan:
@@ -316,7 +316,7 @@ def form_barang(item_id=None):
                   submitted_condition, submitted_status)
         if not all(values[index] for index in (0, 1, 2)):
             flash("Kode, nama, dan kategori barang wajib diisi.", "error")
-        elif room_id and not query_one("SELECT id FROM rooms WHERE id=?", (room_id,)):
+        elif room_id and not query_one("SELECT id FROM ruangan WHERE id=?", (room_id,)):
             flash("Pilih ruangan yang tersedia.", "error")
         else:
             try:
@@ -332,8 +332,8 @@ def form_barang(item_id=None):
                     flash("Kode barang sudah digunakan.", "error")
                 else:
                     raise
-    rooms = query_all("SELECT id, name FROM rooms ORDER BY name")
-    return render_template("form_barang.html", title="Edit Barang" if item else "Tambah Barang", item=item, rooms=rooms)
+    ruangan = query_all("SELECT id, name FROM ruangan ORDER BY name")
+    return render_template("form_barang.html", title="Edit Barang" if item else "Tambah Barang", item=item, ruangan=ruangan)
 
 
 @app.post("/barang/<int:item_id>/hapus")
@@ -360,7 +360,7 @@ def peminjaman():
         borrow_date = request.form.get("borrow_date", "")
         due_date = request.form.get("due_date", "")
         item = query_one("SELECT * FROM items WHERE id = ? AND status = 'Tersedia'", (item_id,))
-        destination = query_one("SELECT id FROM rooms WHERE id=?", (destination_room_id,)) if destination_room_id else None
+        destination = query_one("SELECT id FROM ruangan WHERE id=?", (destination_room_id,)) if destination_room_id else None
         try:
             valid_dates = date.fromisoformat(borrow_date) <= date.fromisoformat(due_date)
         except ValueError:
@@ -388,26 +388,26 @@ def peminjaman():
             return redirect(url_for("peminjaman"))
     if session.get("role") == "Pembimbing":
         items = query_all("""
-            SELECT items.id, items.code, items.name, items.room_id, rooms.name AS origin_room
-            FROM items JOIN rooms ON rooms.id=items.room_id
+            SELECT items.id, items.code, items.name, items.room_id, ruangan.name AS origin_room
+            FROM items JOIN ruangan ON ruangan.id=items.room_id
             WHERE items.status='Tersedia' AND items.room_id != ? ORDER BY items.name
         """, (session.get("room_id"),)) if session.get("room_id") else []
     else:
         items = query_all("""
-            SELECT items.id, items.code, items.name, items.room_id, rooms.name AS origin_room
-            FROM items JOIN rooms ON rooms.id=items.room_id
+            SELECT items.id, items.code, items.name, items.room_id, ruangan.name AS origin_room
+            FROM items JOIN ruangan ON ruangan.id=items.room_id
             WHERE items.status='Tersedia' ORDER BY items.name
         """)
-    rooms = query_all("SELECT id, name FROM rooms ORDER BY code") if session.get("role") == "Admin" else []
+    ruangan = query_all("SELECT id, name FROM ruangan ORDER BY code") if session.get("role") == "Admin" else []
     loans = query_all("""
         SELECT loans.*, items.name AS item_name, origin.name AS origin_room,
                destination.name AS destination_room
         FROM loans JOIN items ON items.id = loans.item_id
-        LEFT JOIN rooms AS origin ON origin.id=loans.origin_room_id
-        LEFT JOIN rooms AS destination ON destination.id=loans.destination_room_id
+        LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
+        LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         ORDER BY loans.id DESC
     """)
-    return render_template("peminjaman.html", title="Peminjaman", items=items, rooms=rooms,
+    return render_template("peminjaman.html", title="Peminjaman", items=items, ruangan=ruangan,
                            loans=loans, today=date.today().isoformat())
 
 
@@ -423,7 +423,7 @@ def pengembalian():
                 flash("Pilih kondisi komputer yang valid.", "error")
                 return redirect(url_for("pengembalian"))
             returned_room_id = request.form.get("returned_room_id", type=int) or loan["origin_room_id"]
-            if not query_one("SELECT id FROM rooms WHERE id=?", (returned_room_id,)):
+            if not query_one("SELECT id FROM ruangan WHERE id=?", (returned_room_id,)):
                 flash("Pilih ruangan tujuan pengembalian yang valid.", "error")
                 return redirect(url_for("pengembalian"))
             item_status = "Tersedia" if condition == "Baik" else "Perbaikan"
@@ -446,13 +446,13 @@ def pengembalian():
         SELECT loans.*, items.name AS item_name, origin.name AS origin_room,
                destination.name AS destination_room FROM loans
         JOIN items ON items.id = loans.item_id
-        LEFT JOIN rooms AS origin ON origin.id=loans.origin_room_id
-        LEFT JOIN rooms AS destination ON destination.id=loans.destination_room_id
+        LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
+        LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
         WHERE loans.status='Dipinjam'
         ORDER BY loans.due_date
     """)
-    rooms = query_all("SELECT id, name FROM rooms ORDER BY code")
-    return render_template("pengembalian.html", title="Pengembalian", loans=loans, rooms=rooms)
+    ruangan = query_all("SELECT id, name FROM ruangan ORDER BY code")
+    return render_template("pengembalian.html", title="Pengembalian", loans=loans, ruangan=ruangan)
 
 
 @app.route("/ruangan", methods=["GET", "POST"])
@@ -462,14 +462,14 @@ def ruangan():
         code = request.form.get("code", "").strip()
         name = request.form.get("name", "").strip()
         person = request.form.get("person_in_charge", "").strip()
-        room_count = query_one("SELECT COUNT(*) AS jumlah FROM rooms")["jumlah"]
+        room_count = query_one("SELECT COUNT(*) AS jumlah FROM ruangan")["jumlah"]
         if room_count >= 4:
             flash("Project ini dibatasi untuk 4 ruangan. Ubah ruangan yang sudah ada.", "error")
         elif not code or not name:
             flash("Kode dan nama ruangan wajib diisi.", "error")
         else:
             try:
-                execute("INSERT INTO rooms (code, name, person_in_charge) VALUES (?, ?, ?)", (code, name, person))
+                execute("INSERT INTO ruangan (code, name, person_in_charge) VALUES (?, ?, ?)", (code, name, person))
                 flash("Ruangan berhasil ditambahkan.", "success")
                 return redirect(url_for("ruangan"))
             except Exception as error:
@@ -477,17 +477,17 @@ def ruangan():
                     flash("Kode atau nama ruangan sudah digunakan.", "error")
                 else:
                     raise
-    rooms = query_all("""
-        SELECT rooms.*, COUNT(items.id) AS item_count FROM rooms
-        LEFT JOIN items ON items.room_id = rooms.id GROUP BY rooms.id ORDER BY rooms.code
+    ruangan = query_all("""
+        SELECT ruangan.*, COUNT(items.id) AS item_count FROM ruangan
+        LEFT JOIN items ON items.room_id = ruangan.id GROUP BY ruangan.id ORDER BY ruangan.code
     """)
-    return render_template("ruangan.html", title="Data Ruangan", rooms=rooms)
+    return render_template("ruangan.html", title="Data Ruangan", ruangan=ruangan)
 
 
 @app.route("/ruangan/<int:room_id>/edit", methods=["GET", "POST"])
 @admin_required
 def edit_ruangan(room_id):
-    room = query_one("SELECT * FROM rooms WHERE id=?", (room_id,))
+    room = query_one("SELECT * FROM ruangan WHERE id=?", (room_id,))
     if not room:
         flash("Ruangan tidak ditemukan.", "error")
         return redirect(url_for("ruangan"))
@@ -499,7 +499,7 @@ def edit_ruangan(room_id):
             flash("Kode dan nama ruangan wajib diisi.", "error")
         else:
             try:
-                execute("UPDATE rooms SET code=?, name=?, person_in_charge=? WHERE id=?", (code, name, person, room_id))
+                execute("UPDATE ruangan SET code=?, name=?, person_in_charge=? WHERE id=?", (code, name, person, room_id))
                 flash("Data ruangan berhasil diperbarui.", "success")
                 return redirect(url_for("ruangan"))
             except Exception as error:
@@ -524,7 +524,7 @@ def hapus_ruangan(room_id):
     """, (room_id, room_id, room_id)):
         flash("Ruangan ini masih tercatat dalam riwayat peminjaman.", "error")
         return redirect(url_for("ruangan"))
-    execute("DELETE FROM rooms WHERE id = ?", (room_id,))
+    execute("DELETE FROM ruangan WHERE id = ?", (room_id,))
     flash("Ruangan berhasil dihapus.", "success")
     return redirect(url_for("ruangan"))
 
@@ -537,9 +537,9 @@ def laporan():
         SELECT loans.*, items.name AS item_name, origin.name AS origin_room,
                destination.name AS destination_room, returned.name AS returned_room
         FROM loans JOIN items ON items.id=loans.item_id
-        LEFT JOIN rooms AS origin ON origin.id=loans.origin_room_id
-        LEFT JOIN rooms AS destination ON destination.id=loans.destination_room_id
-        LEFT JOIN rooms AS returned ON returned.id=loans.returned_room_id
+        LEFT JOIN ruangan AS origin ON origin.id=loans.origin_room_id
+        LEFT JOIN ruangan AS destination ON destination.id=loans.destination_room_id
+        LEFT JOIN ruangan AS returned ON returned.id=loans.returned_room_id
         ORDER BY loans.id DESC
     """)
     return render_template("laporan.html", title="Laporan", barang=barang, loans=loans)
@@ -561,8 +561,8 @@ def ekspor_laporan():
 @login_required
 def profil_admin():
     admin = query_one("""
-        SELECT users.name, users.username, users.role, rooms.name AS room_name
-        FROM users LEFT JOIN rooms ON rooms.id=users.room_id WHERE users.id=?
+        SELECT users.name, users.username, users.role, ruangan.name AS room_name
+        FROM users LEFT JOIN ruangan ON ruangan.id=users.room_id WHERE users.id=?
     """, (session["user_id"],))
     admin["nama"] = admin.pop("name")
     admin["jabatan"] = admin["role"]

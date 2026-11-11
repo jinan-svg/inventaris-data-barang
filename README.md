@@ -11,7 +11,7 @@ Aplikasi inventaris sederhana dengan Flask dan MySQL Laragon.
 5. Jalankan `python main.py`, lalu buka `http://127.0.0.1:5000`.
 6. Jika belum ada Admin, buat akun pertama dengan `flask --app main create-admin`. Admin selanjutnya dapat dibuat dari menu **Pengguna**.
 
-Saat aplikasi pertama kali dijalankan, data dari `instance/inventaris.db` lama disalin ke MySQL jika database tujuan benar-benar kosong. File SQLite lama tidak dihapus. Ruangan dan inventaris contoh ditambahkan hanya jika tabel terkait kosong. Database operasional MySQL tetap berada di komputer Laragon; jangan commit dump yang berisi akun, hash password, atau inventaris internal ke GitHub.
+Tabel lokasi di MySQL bernama `ruangan`. Saat aplikasi diperbarui dari versi yang memakai tabel `rooms`, tabel tersebut diubah namanya otomatis tanpa menghapus baris atau relasinya. Data dari `instance/inventaris.db` lama disalin ke MySQL jika database tujuan benar-benar kosong; file SQLite lama tidak dihapus. Ruangan dan inventaris contoh ditambahkan hanya jika tabel terkait kosong. Database operasional MySQL tetap berada di komputer Laragon; jangan commit dump yang berisi akun, hash password, atau inventaris internal ke GitHub.
 
 Pendaftaran publik ditutup. Admin membuat dan mengelola maksimal 2 akun Admin serta 4 akun Pembimbing melalui menu **Pengguna**. Setiap Pembimbing harus mendapat ruangan yang unik. Empat ruangan awal dapat diganti namanya di menu **Ruangan**. Akun Admin mengelola pengguna, barang, dan ruangan; Admin maupun Pembimbing dapat mencatat transaksi.
 

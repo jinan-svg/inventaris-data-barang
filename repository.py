@@ -80,30 +80,49 @@ def _table_count(db, table):
     return db.execute(f"SELECT COUNT(*) AS total FROM `{table}`").fetchone()["total"]
 
 
+def _table_exists(db, table):
+    return bool(db.execute("""
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema=DATABASE() AND table_name=?
+    """, (table,)).fetchone())
+
+
+def _rename_legacy_rooms_table(db):
+    has_rooms = _table_exists(db, "rooms")
+    has_ruangan = _table_exists(db, "ruangan")
+    if has_rooms and has_ruangan:
+        raise RuntimeError(
+            "Database memiliki tabel rooms dan ruangan sekaligus. "
+            "Satukan datanya sebelum menjalankan aplikasi."
+        )
+    if has_rooms:
+        db.execute("RENAME TABLE rooms TO ruangan")
+
+
 def _migrate_sqlite_if_empty(db):
     if not LEGACY_DB_PATH.exists():
         return
-    if any(_table_count(db, table) for table in ("users", "rooms", "items", "loans")):
+    if any(_table_count(db, table) for table in ("users", "ruangan", "items", "loans")):
         return
     old = sqlite3.connect(LEGACY_DB_PATH)
     old.row_factory = sqlite3.Row
     try:
         old.execute("PRAGMA foreign_keys = ON")
-        for table, columns in (
-            ("rooms", ("id", "code", "name", "person_in_charge", "notes")),
-            ("users", ("id", "name", "username", "password_hash", "role", "room_id", "created_at")),
-            ("items", ("id", "code", "name", "category", "room_id", "condition", "status")),
-            ("loans", ("id", "code", "item_id", "borrower", "borrow_date", "due_date", "returned_at", "return_condition", "origin_room_id", "destination_room_id", "returned_room_id", "status")),
+        for source_table, target_table, columns in (
+            ("rooms", "ruangan", ("id", "code", "name", "person_in_charge", "notes")),
+            ("users", "users", ("id", "name", "username", "password_hash", "role", "room_id", "created_at")),
+            ("items", "items", ("id", "code", "name", "category", "room_id", "condition", "status")),
+            ("loans", "loans", ("id", "code", "item_id", "borrower", "borrow_date", "due_date", "returned_at", "return_condition", "origin_room_id", "destination_room_id", "returned_room_id", "status")),
         ):
             try:
-                rows = old.execute(f"SELECT {', '.join(columns)} FROM {table}").fetchall()
+                rows = old.execute(f"SELECT {', '.join(columns)} FROM {source_table}").fetchall()
             except sqlite3.OperationalError:
                 continue
             if not rows:
                 continue
             placeholders = ", ".join(["%s"] * len(columns))
             names = ", ".join(f"`{column}`" for column in columns)
-            db.executemany(f"INSERT INTO `{table}` ({names}) VALUES ({placeholders})",
+            db.executemany(f"INSERT INTO `{target_table}` ({names}) VALUES ({placeholders})",
                            [tuple(row[column] for column in columns) for row in rows])
     finally:
         old.close()
@@ -111,7 +130,8 @@ def _migrate_sqlite_if_empty(db):
 
 def init_db():
     with db_session() as db:
-        db.execute("""CREATE TABLE IF NOT EXISTS rooms (
+        _rename_legacy_rooms_table(db)
+        db.execute("""CREATE TABLE IF NOT EXISTS ruangan (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
             code VARCHAR(100) NOT NULL UNIQUE, name VARCHAR(255) NOT NULL UNIQUE,
             person_in_charge VARCHAR(255) NOT NULL DEFAULT '', notes TEXT NULL
@@ -121,7 +141,7 @@ def init_db():
             name VARCHAR(255) NOT NULL, username VARCHAR(191) NOT NULL UNIQUE,
             password_hash VARCHAR(255) NOT NULL, role VARCHAR(30) NOT NULL,
             room_id INT NULL, created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_users_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL,
+            CONSTRAINT fk_users_room FOREIGN KEY (room_id) REFERENCES ruangan(id) ON DELETE SET NULL,
             UNIQUE KEY unique_pembimbing_room (room_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
         db.execute("""CREATE TABLE IF NOT EXISTS items (
@@ -130,7 +150,7 @@ def init_db():
             category VARCHAR(100) NOT NULL, room_id INT NULL,
             `condition` VARCHAR(100) NOT NULL DEFAULT 'Baik',
             status VARCHAR(100) NOT NULL DEFAULT 'Tersedia',
-            CONSTRAINT fk_items_room FOREIGN KEY (room_id) REFERENCES rooms(id) ON DELETE SET NULL
+            CONSTRAINT fk_items_room FOREIGN KEY (room_id) REFERENCES ruangan(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
         db.execute("""CREATE TABLE IF NOT EXISTS loans (
             id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -141,30 +161,30 @@ def init_db():
             destination_room_id INT NULL, returned_room_id INT NULL,
             status VARCHAR(100) NOT NULL DEFAULT 'Dipinjam',
             CONSTRAINT fk_loans_item FOREIGN KEY (item_id) REFERENCES items(id),
-            CONSTRAINT fk_loans_origin FOREIGN KEY (origin_room_id) REFERENCES rooms(id) ON DELETE SET NULL,
-            CONSTRAINT fk_loans_destination FOREIGN KEY (destination_room_id) REFERENCES rooms(id) ON DELETE SET NULL,
-            CONSTRAINT fk_loans_returned FOREIGN KEY (returned_room_id) REFERENCES rooms(id) ON DELETE SET NULL
+            CONSTRAINT fk_loans_origin FOREIGN KEY (origin_room_id) REFERENCES ruangan(id) ON DELETE SET NULL,
+            CONSTRAINT fk_loans_destination FOREIGN KEY (destination_room_id) REFERENCES ruangan(id) ON DELETE SET NULL,
+            CONSTRAINT fk_loans_returned FOREIGN KEY (returned_room_id) REFERENCES ruangan(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4""")
         notes_column = db.execute("""
             SELECT IS_NULLABLE FROM information_schema.columns
-            WHERE table_schema=DATABASE() AND table_name='rooms' AND column_name='notes'
+            WHERE table_schema=DATABASE() AND table_name='ruangan' AND column_name='notes'
         """).fetchone()
         if notes_column and notes_column["IS_NULLABLE"] == "NO":
-            db.execute("ALTER TABLE rooms MODIFY notes TEXT NULL")
+            db.execute("ALTER TABLE ruangan MODIFY notes TEXT NULL")
         _migrate_sqlite_if_empty(db)
-        if _table_count(db, "rooms") == 0:
-            db.executemany("INSERT INTO rooms (code, name, person_in_charge) VALUES (?, ?, ?)",
+        if _table_count(db, "ruangan") == 0:
+            db.executemany("INSERT INTO ruangan (code, name, person_in_charge) VALUES (?, ?, ?)",
                            [("R-01", "Ruang RPL", "Pembimbing RPL"),
                             ("R-02", "Ruang DKV", "Pembimbing DKV"),
                             ("R-03", "Ruang TKJ", "Pembimbing TKJ"),
                             ("R-04", "Ruang Admin", "Administrator")])
         if _table_count(db, "items") == 0:
-            rooms = {row["name"]: row["id"] for row in db.execute("SELECT id, name FROM rooms").fetchall()}
+            ruangan = {row["name"]: row["id"] for row in db.execute("SELECT id, name FROM ruangan").fetchall()}
             db.executemany("INSERT INTO items (code, name, category, room_id, `condition`, status) VALUES (?, ?, ?, ?, ?, ?)",
-                           [("INV-001", "Komputer Lenovo ThinkCentre", "Komputer", rooms["Ruang RPL"], "Baik", "Tersedia"),
-                            ("INV-002", "Monitor LED 24 inci", "Monitor", rooms["Ruang DKV"], "Baik", "Tersedia"),
-                            ("INV-003", "Printer Epson L3210", "Printer", rooms["Ruang Admin"], "Perlu Perbaikan", "Perbaikan"),
-                            ("INV-004", "Keyboard Logitech K120", "Aksesori", rooms["Ruang TKJ"], "Baik", "Tersedia")])
+                           [("INV-001", "Komputer Lenovo ThinkCentre", "Komputer", ruangan["Ruang RPL"], "Baik", "Tersedia"),
+                            ("INV-002", "Monitor LED 24 inci", "Monitor", ruangan["Ruang DKV"], "Baik", "Tersedia"),
+                            ("INV-003", "Printer Epson L3210", "Printer", ruangan["Ruang Admin"], "Perlu Perbaikan", "Perbaikan"),
+                            ("INV-004", "Keyboard Logitech K120", "Aksesori", ruangan["Ruang TKJ"], "Baik", "Tersedia")])
 
 
 def query_all(sql, params=()):
@@ -186,8 +206,8 @@ def execute(sql, params=()):
 def daftar_barang():
     return query_all("""
         SELECT items.id, items.code AS kode, items.name AS nama,
-               items.category AS kategori, COALESCE(rooms.name, 'Belum ditempatkan') AS ruangan,
+               items.category AS kategori, COALESCE(ruangan.name, 'Belum ditempatkan') AS ruangan,
                items.room_id, items.`condition` AS kondisi, items.status
-        FROM items LEFT JOIN rooms ON rooms.id = items.room_id
+        FROM items LEFT JOIN ruangan ON ruangan.id = items.room_id
         ORDER BY items.code
     """)
